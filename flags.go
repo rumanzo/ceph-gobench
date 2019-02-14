@@ -1,20 +1,22 @@
 package main
 
 import (
+	"code.cloudfoundry.org/bytefmt"
+	"github.com/juju/gnuflag"
+	"log"
 	"strings"
 	"time"
-	"log"
-	"github.com/juju/gnuflag"
 )
 
 type Params struct {
-	duration time.Duration
-	threads_count int
-	parallel bool
+	duration                                               time.Duration
+	threadsCount                                           int
+	blocksize                                              uint64
+	parallel                                               bool
 	bs, cluster, user, keyring, config, pool, mode, define string
 }
 
-func Route () Params {
+func Route() Params {
 	params := Params{}
 	gnuflag.DurationVar(&params.duration, "duration", 30,
 		"Time limit for each test in seconds")
@@ -50,17 +52,23 @@ func Route () Params {
 		"Mode osd or host")
 	gnuflag.StringVar(&params.define, "define", "",
 		"Define specifically	osd or host. osd.X or ceph-host-X")
-	gnuflag.IntVar(&params.threads_count, "threads", 1,
+	gnuflag.IntVar(&params.threadsCount, "threads", 1,
 		"Threads count")
-	gnuflag.IntVar(&params.threads_count, "t", 1,
+	gnuflag.IntVar(&params.threadsCount, "t", 1,
 		"Threads count on each osd")
 	gnuflag.BoolVar(&params.parallel, "parallel", false,
 		"Do test all osd in parallel mode")
 	gnuflag.Parse(true)
+	var err error
 	if params.mode == "osd" && len(params.define) != 0 {
 		if i := strings.HasPrefix(params.define, "osd."); i != true {
 			log.Fatalln("Define correct osd in format osd.X")
 		}
+	}
+	params.blocksize, err = bytefmt.ToBytes(params.bs)
+	if err != nil {
+		log.Println("Can't convert defined block size. 4K block size will be used\n")
+		params.blocksize = 4096
 	}
 	return params
 }
