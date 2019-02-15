@@ -26,7 +26,7 @@ func get_pool_size(cephconn *Cephconnection, params *Params) *Monanswer {
 
 }
 
-func get_pg_by_pool(cephconn *Cephconnection, params *Params) *[]PlacementGroups {
+func get_pg_by_pool(cephconn *Cephconnection, params *Params) *[]PlacementGroup {
 	monjson, err := json.Marshal(Moncommand{Prefix: "pg ls-by-pool", Poolstr: params.pool, Format: "json"})
 	if err != nil {
 		log.Fatalf("Can't marshal json mon query. Error: %v", err)
@@ -36,7 +36,7 @@ func get_pg_by_pool(cephconn *Cephconnection, params *Params) *[]PlacementGroups
 		log.Fatalf("Failed exec monCommand. Error: %v", err)
 	}
 
-	monanswer := []PlacementGroups{}
+	monanswer := []PlacementGroup{}
 	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
 		log.Fatalf("Can't parse monitor answer. Error: %v", err)
 	}
@@ -73,7 +73,7 @@ func main() {
 			monanswersize.Pool, monanswersize.Size, monanswersize.Pool, monanswersize.Pool)
 	}
 
-	monanswerpgs := get_pg_by_pool(cephconn, params)
-	log.Println(monanswerpgs)
+	placementGroups := get_pg_by_pool(cephconn, params)
+	log.Println(placementGroups)
 
 }

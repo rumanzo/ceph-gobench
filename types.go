@@ -32,7 +32,7 @@ type Monanswer struct {
 	Size   int    `json:"size,omitempty"`
 }
 
-func (times *PlacementGroups) StringsToTimes() {
+func (times *PlacementGroup) StringsToTimes() {
 	const LongForm = "2006-01-02 15:04:05.000000"
 	times.Last_fresh, _ = time.Parse(LongForm, times.Last_fresh_str)
 	times.Last_change, _ = time.Parse(LongForm, times.Last_fresh_str)
@@ -51,7 +51,7 @@ func (times *PlacementGroups) StringsToTimes() {
 	times.Last_scrub, _ = time.Parse(LongForm, times.Last_scrub_str)
 }
 
-type PlacementGroups struct {
+type PlacementGroup struct {
 	Pgid                       string `json:"pgid"`
 	Version                    string `json:"version"`
 	Reported_seq               string `json:"reported_seq"`
