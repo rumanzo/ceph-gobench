@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func connectioninit(params *Params) *Cephconnection {
+func connectioninit(params Params) *Cephconnection {
 	cephconn := &Cephconnection{}
 	var err error
 	if _, err := os.Stat(params.config); os.IsNotExist(err) {

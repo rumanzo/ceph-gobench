@@ -7,8 +7,9 @@ import (
 	"time"
 )
 
-func get_pool_size(cephconn *Cephconnection, params *Params) *Monanswer {
-	monjson, err := json.Marshal(Moncommand{Prefix: "osd pool get", Pool: params.pool, Format: "json", Var: "size"})
+func get_pool_size(cephconn *Cephconnection, params Params) Poolinfo {
+	monjson, err := json.Marshal(map[string]string{"prefix": "osd pool get", "pool": params.pool,
+		"format": "json", "var": "size"})
 	if err != nil {
 		log.Fatalf("Can't marshal json mon query. Error: %v", err)
 	}
@@ -18,16 +19,16 @@ func get_pool_size(cephconn *Cephconnection, params *Params) *Monanswer {
 		log.Fatalf("Failed exec monCommand. Error: %v", err)
 	}
 
-	monanswer := Monanswer{}
+	monanswer := Poolinfo{}
 	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
 		log.Fatalf("Can't parse monitor answer. Error: %v", err)
 	}
-	return &monanswer
+	return monanswer
 
 }
 
-func get_pg_by_pool(cephconn *Cephconnection, params *Params) *[]PlacementGroup {
-	monjson, err := json.Marshal(Moncommand{Prefix: "pg ls-by-pool", Poolstr: params.pool, Format: "json"})
+func get_pg_by_pool(cephconn *Cephconnection, params Params) []PlacementGroup {
+	monjson, err := json.Marshal(map[string]string{"prefix": "pg ls-by-pool", "poolstr": params.pool, "format": "json"})
 	if err != nil {
 		log.Fatalf("Can't marshal json mon query. Error: %v", err)
 	}
@@ -40,8 +41,16 @@ func get_pg_by_pool(cephconn *Cephconnection, params *Params) *[]PlacementGroup 
 	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
 		log.Fatalf("Can't parse monitor answer. Error: %v", err)
 	}
-	return &monanswer
+	return monanswer
 }
+
+//func get_crush_dump(params Params, cephconn *Cephconnection) OsdCrushDump {
+//
+//}
+
+//func get_acting_osd(params Params, ) map[string]float64 {
+//
+//}
 
 func main() {
 	params := Route()
@@ -50,11 +59,6 @@ func main() {
 
 	// https://tracker.ceph.com/issues/24114
 	time.Sleep(time.Millisecond * 100)
-
-	stats, _ := cephconn.ioctx.GetPoolStats()
-	log.Println(stats)
-
-	log.Printf("%v\n", params.blocksize)
 
 	var buffs [][]byte
 	for i := 0; i < 2*params.threadsCount; i++ {
@@ -67,13 +71,18 @@ func main() {
 			log.Fatalln(err)
 		}
 	}
-	monanswersize := get_pool_size(cephconn, params)
-	if monanswersize.Size != 1 {
+	poolinfo := get_pool_size(cephconn, params)
+	if poolinfo.Size != 1 {
 		log.Fatalf("Pool size must be 1. Current size for pool %v is %v. Don't forget that it must be useless pool (not production). Do:\n # ceph osd pool set %v min_size 1\n # ceph osd pool set %v size 1",
-			monanswersize.Pool, monanswersize.Size, monanswersize.Pool, monanswersize.Pool)
+			poolinfo.Pool, poolinfo.Size, poolinfo.Pool, poolinfo.Pool)
 	}
 
 	placementGroups := get_pg_by_pool(cephconn, params)
-	log.Println(placementGroups)
+	for _, value := range placementGroups {
+		log.Printf("%+v\n", value)
+	}
 
 }
+
+//TODO Получить структуру пула (osd dump), рул. Получить все рулы (osd crush dump). Разобрать краш карту, получить список осд.
+//TODO получить список PG, если не все находятся на нужных OSD выкинуть эксепшн.

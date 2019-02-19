@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func Route() *Params {
+func Route() Params {
 	params := Params{}
 	gnuflag.DurationVar(&params.duration, "duration", 30,
 		"Time limit for each test in seconds")
@@ -61,5 +61,5 @@ func Route() *Params {
 		log.Println("Can't convert defined block size. 4K block size will be used\n")
 		params.blocksize = 4096
 	}
-	return &params
+	return params
 }
