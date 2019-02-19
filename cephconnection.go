@@ -23,11 +23,11 @@ func connectioninit(params Params) *Cephconnection {
 	}
 
 	if err = cephconn.conn.ReadConfigFile(params.config); err != nil {
-		log.Fatalf("Can't read config file. Error: err\n", err)
+		log.Fatalf("Can't read config file. Error: %v\n", err)
 	}
 
 	if err = cephconn.conn.SetConfigOption("keyring", params.keyring); err != nil {
-		log.Fatalf("Can't set config option. Error: err\n", err)
+		log.Fatalf("Can't set config option. Error: %v\n", err)
 	}
 
 	if err = cephconn.conn.Connect(); err != nil {
