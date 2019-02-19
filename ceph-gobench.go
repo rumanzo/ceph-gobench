@@ -131,7 +131,7 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 					}
 				}
 			}
-			if len(bucketitems) == 0 {
+			if len(osdhosts) == 0 {
 				log.Fatalf("Defined osd not exist in root for rule: %v pool: %v.\nYou should define osd like osd.X",
 					crushrulename, poolinfo.Pool)
 			}
@@ -147,7 +147,7 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 					}
 				}
 			}
-			if len(bucketitems) == 0 {
+			if len(osdhosts) == 0 {
 				log.Fatalf("Defined host not exist in root for rule: %v pool: %v", crushrulename, poolinfo.Pool)
 			}
 		}
@@ -161,7 +161,7 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 				}
 			}
 		}
-		if len(bucketitems) == 0 {
+		if len(osdhosts) == 0 {
 			log.Fatalf("Osd not exist in root for rule: %v pool: %v", crushrulename, poolinfo.Pool)
 		}
 	}
