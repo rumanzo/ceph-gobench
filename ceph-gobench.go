@@ -137,7 +137,7 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 			}
 		} else {
 			for _, hostbucket := range bucketitems {
-				if strings.HasPrefix(hostbucket.Name, params.define) {
+				if strings.Split(hostbucket.Name, "~")[0] == strings.Split(params.define, "~")[0] { //purge device class
 					for _, item := range hostbucket.Items {
 						for _, device := range osdcrushdump.Devices {
 							if device.ID == item.ID {
