@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strings"
 	"time"
 )
 
+//future feature
 func makepreudorandom() {
 	a := make([]int, 0, 4096/4)
 	for i := 0; i < 4096; i += 4 {
@@ -46,7 +48,7 @@ func GetPoolSize(cephconn *Cephconnection, params Params) Poolinfo {
 func GetPgByPool(cephconn *Cephconnection, params Params) []PlacementGroup {
 	monrawanswer := MakeMonQuery(cephconn, map[string]string{"prefix": "pg ls-by-pool", "poolstr": params.pool,
 		"format": "json"})
-	monanswer := []PlacementGroup{}
+	var monanswer []PlacementGroup
 	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
 		log.Fatalf("Can't parse monitor answer. Error: %v", err)
 	}
@@ -55,7 +57,7 @@ func GetPgByPool(cephconn *Cephconnection, params Params) []PlacementGroup {
 
 func GetOsdCrushDump(cephconn *Cephconnection) OsdCrushDump {
 	monrawanswer := MakeMonQuery(cephconn, map[string]string{"prefix": "osd crush dump", "format": "json"})
-	monanswer := OsdCrushDump{}
+	var monanswer OsdCrushDump
 	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
 		log.Fatalf("Can't parse monitor answer. Error: %v", err)
 	}
@@ -64,32 +66,106 @@ func GetOsdCrushDump(cephconn *Cephconnection) OsdCrushDump {
 
 func GetOsdDump(cephconn *Cephconnection) OsdDump {
 	monrawanswer := MakeMonQuery(cephconn, map[string]string{"prefix": "osd dump", "format": "json"})
-	monanswer := OsdDump{}
+	var monanswer OsdDump
 	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
 		log.Fatalf("Can't parse monitor answer. Error: %v", err)
 	}
 	return monanswer
 }
 
-func GetOsdLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDump, poolinfo Poolinfo) []int {
+func GetCrushHostBuckets(buckets []Bucket, itemid int64) []Bucket {
+	var rootbuckets []Bucket
+	for _, bucket := range buckets {
+		if bucket.ID == itemid {
+			if bucket.TypeName == "host" {
+				rootbuckets = append(rootbuckets, bucket)
+				for _, item := range bucket.Items {
+					result := GetCrushHostBuckets(buckets, item.ID)
+					for _, it := range result {
+						rootbuckets = append(rootbuckets, it)
+					}
+				}
+			} else {
+				for _, item := range bucket.Items {
+					result := GetCrushHostBuckets(buckets, item.ID)
+					for _, it := range result {
+						rootbuckets = append(rootbuckets, it)
+					}
+				}
+			}
+		}
+	}
+	return rootbuckets
+}
+
+func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDump, poolinfo Poolinfo) map[string][]Device {
 	var crushrule int64
+	var crushrulename string
 	for _, pool := range osddump.Pools {
 		if pool.Pool == poolinfo.PoolId {
 			crushrule = pool.CrushRule
 		}
 	}
-	var itemid int64
+	var rootid int64
 	for _, rule := range osdcrushdump.Rules {
 		if rule.RuleID == crushrule {
+			crushrulename = rule.RuleName
 			for _, step := range rule.Steps {
 				if step.Op == "take" {
-					itemid = step.Item
+					rootid = step.Item
 				}
 			}
 		}
 	}
-	log.Println(itemid)
-	return []int{}
+
+	osdhosts := make(map[string][]Device)
+	bucketitems := GetCrushHostBuckets(osdcrushdump.Buckets, rootid)
+	if params.define != "" {
+		if strings.HasPrefix(params.define, "osd.") {
+			for _, hostbucket := range bucketitems {
+				for _, item := range hostbucket.Items {
+					for _, device := range osdcrushdump.Devices {
+						if device.ID == item.ID && params.define == device.Name {
+							osdhosts[hostbucket.Name] = append(osdhosts[hostbucket.Name], device)
+						}
+					}
+				}
+			}
+			if len(bucketitems) == 0 {
+				log.Fatalf("Defined osd not exist in root for rule: %v pool: %v.\nYou should define osd like osd.X",
+					crushrulename, poolinfo.Pool)
+			}
+		} else {
+			for _, hostbucket := range bucketitems {
+				if strings.HasPrefix(hostbucket.Name, params.define) {
+					for _, item := range hostbucket.Items {
+						for _, device := range osdcrushdump.Devices {
+							if device.ID == item.ID {
+								osdhosts[hostbucket.Name] = append(osdhosts[hostbucket.Name], device)
+							}
+						}
+					}
+				}
+			}
+			if len(bucketitems) == 0 {
+				log.Fatalf("Defined host not exist in root for rule: %v pool: %v", crushrulename, poolinfo.Pool)
+			}
+		}
+	} else {
+		for _, hostbucket := range bucketitems {
+			for _, item := range hostbucket.Items {
+				for _, device := range osdcrushdump.Devices {
+					if device.ID == item.ID {
+						osdhosts[hostbucket.Name] = append(osdhosts[hostbucket.Name], device)
+					}
+				}
+			}
+		}
+		if len(bucketitems) == 0 {
+			log.Fatalf("Osd not exist in root for rule: %v pool: %v", crushrulename, poolinfo.Pool)
+		}
+	}
+	return osdhosts
 }
 
 func main() {
@@ -123,10 +199,9 @@ func main() {
 	//}
 	crushosddump := GetOsdCrushDump(cephconn)
 	osddump := GetOsdDump(cephconn)
-	GetOsdLocations(params, crushosddump, osddump, poolinfo)
-	log.Println(poolinfo)
+	osddevices := GetOsdForLocations(params, crushosddump, osddump, poolinfo)
+	log.Printf("%+v", osddevices)
 
 }
 
-//TODO Получить структуру пула (osd dump), рул. Получить все рулы (osd crush dump). Разобрать краш карту, получить список осд.
 //TODO получить список PG, если не все находятся на нужных OSD выкинуть эксепшн.
