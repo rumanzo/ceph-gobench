@@ -20,8 +20,8 @@ type Cephconnection struct {
 
 type Poolinfo struct {
 	Pool   string `json:"pool,omitempty"`
-	PoolId int    `json:"pool_id,omitempty"`
-	Size   int    `json:"size,omitempty"`
+	PoolId int64  `json:"pool_id,omitempty"`
+	Size   int64  `json:"size,omitempty"`
 }
 
 func (times *PlacementGroup) StringsToTimes() {
@@ -43,28 +43,32 @@ func (times *PlacementGroup) StringsToTimes() {
 	times.LastScrubT, _ = time.Parse(LongForm, times.LastScrub)
 }
 
+type Bucket struct {
+	Alg   string `json:"alg"`
+	Hash  string `json:"hash"`
+	ID    int64  `json:"id"`
+	Items []struct {
+		ID     int64   `json:"id"`
+		Pos    int64   `json:"pos"`
+		Weight float64 `json:"weight"`
+	} `json:"items"`
+	Name     string  `json:"name"`
+	TypeID   int64   `json:"type_id"`
+	TypeName string  `json:"type_name"`
+	Weight   float64 `json:"weight"`
+}
+
+type Device struct {
+	Class string `json:"class"`
+	ID    int64  `json:"id"`
+	Name  string `json:"name"`
+}
+
 type OsdCrushDump struct {
-	Buckets []struct {
-		Alg   string `json:"alg"`
-		Hash  string `json:"hash"`
-		ID    int64  `json:"id"`
-		Items []struct {
-			ID     int64 `json:"id"`
-			Pos    int64 `json:"pos"`
-			Weight int64 `json:"weight"`
-		} `json:"items"`
-		Name     string `json:"name"`
-		TypeID   int64  `json:"type_id"`
-		TypeName string `json:"type_name"`
-		Weight   int64  `json:"weight"`
-	} `json:"buckets"`
+	Buckets    []Bucket `json:"buckets"`
 	ChooseArgs struct{} `json:"choose_args"`
-	Devices    []struct {
-		Class string `json:"class"`
-		ID    int64  `json:"id"`
-		Name  string `json:"name"`
-	} `json:"devices"`
-	Rules []struct {
+	Devices    []Device `json:"devices"`
+	Rules      []struct {
 		MaxSize  int64  `json:"max_size"`
 		MinSize  int64  `json:"min_size"`
 		RuleID   int64  `json:"rule_id"`
@@ -108,67 +112,123 @@ type OsdCrushDump struct {
 }
 
 type OsdDump struct {
-	Buckets []struct {
-		Alg   string `json:"alg"`
-		Hash  string `json:"hash"`
-		ID    int64  `json:"id"`
-		Items []struct {
-			ID     int64 `json:"id"`
-			Pos    int64 `json:"pos"`
-			Weight int64 `json:"weight"`
-		} `json:"items"`
-		Name     string `json:"name"`
-		TypeID   int64  `json:"type_id"`
-		TypeName string `json:"type_name"`
-		Weight   int64  `json:"weight"`
-	} `json:"buckets"`
-	ChooseArgs struct{} `json:"choose_args"`
-	Devices    []struct {
-		Class string `json:"class"`
-		ID    int64  `json:"id"`
-		Name  string `json:"name"`
-	} `json:"devices"`
-	Rules []struct {
-		MaxSize  int64  `json:"max_size"`
-		MinSize  int64  `json:"min_size"`
-		RuleID   int64  `json:"rule_id"`
-		RuleName string `json:"rule_name"`
-		Ruleset  int64  `json:"ruleset"`
-		Steps    []struct {
-			Item     int64  `json:"item"`
-			ItemName string `json:"item_name"`
-			Num      int64  `json:"num"`
-			Op       string `json:"op"`
-			Type     string `json:"type"`
-		} `json:"steps"`
-		Type int64 `json:"type"`
-	} `json:"rules"`
-	Tunables struct {
-		AllowedBucketAlgs        int64  `json:"allowed_bucket_algs"`
-		ChooseLocalFallbackTries int64  `json:"choose_local_fallback_tries"`
-		ChooseLocalTries         int64  `json:"choose_local_tries"`
-		ChooseTotalTries         int64  `json:"choose_total_tries"`
-		ChooseleafDescendOnce    int64  `json:"chooseleaf_descend_once"`
-		ChooseleafStable         int64  `json:"chooseleaf_stable"`
-		ChooseleafVaryR          int64  `json:"chooseleaf_vary_r"`
-		HasV2Rules               int64  `json:"has_v2_rules"`
-		HasV3Rules               int64  `json:"has_v3_rules"`
-		HasV4Buckets             int64  `json:"has_v4_buckets"`
-		HasV5Rules               int64  `json:"has_v5_rules"`
-		LegacyTunables           int64  `json:"legacy_tunables"`
-		MinimumRequiredVersion   string `json:"minimum_required_version"`
-		OptimalTunables          int64  `json:"optimal_tunables"`
-		Profile                  string `json:"profile"`
-		RequireFeatureTunables   int64  `json:"require_feature_tunables"`
-		RequireFeatureTunables2  int64  `json:"require_feature_tunables2"`
-		RequireFeatureTunables3  int64  `json:"require_feature_tunables3"`
-		RequireFeatureTunables5  int64  `json:"require_feature_tunables5"`
-		StrawCalcVersion         int64  `json:"straw_calc_version"`
-	} `json:"tunables"`
-	Types []struct {
-		Name   string `json:"name"`
-		TypeID int64  `json:"type_id"`
-	} `json:"types"`
+	BackfillfullRatio   float64  `json:"backfillfull_ratio"`
+	Blacklist           struct{} `json:"blacklist"`
+	ClusterSnapshot     string   `json:"cluster_snapshot"`
+	Created             string   `json:"created"`
+	CrushVersion        int64    `json:"crush_version"`
+	Epoch               int64    `json:"epoch"`
+	ErasureCodeProfiles struct {
+		Default struct {
+			K         string `json:"k"`
+			M         string `json:"m"`
+			Plugin    string `json:"plugin"`
+			Technique string `json:"technique"`
+		} `json:"default"`
+	} `json:"erasure_code_profiles"`
+	Flags           string        `json:"flags"`
+	FlagsNum        int64         `json:"flags_num"`
+	FlagsSet        []string      `json:"flags_set"`
+	Fsid            string        `json:"fsid"`
+	FullRatio       float64       `json:"full_ratio"`
+	MaxOsd          int64         `json:"max_osd"`
+	MinCompatClient string        `json:"min_compat_client"`
+	Modified        string        `json:"modified"`
+	NearfullRatio   float64       `json:"nearfull_ratio"`
+	NewPurgedSnaps  []interface{} `json:"new_purged_snaps"`
+	NewRemovedSnaps []interface{} `json:"new_removed_snaps"`
+	OsdXinfo        []struct {
+		DownStamp        string  `json:"down_stamp"`
+		Features         int64   `json:"features"`
+		LaggyInterval    int64   `json:"laggy_interval"`
+		LaggyProbability float64 `json:"laggy_probability"`
+		OldWeight        float64 `json:"old_weight"`
+		Osd              int64   `json:"osd"`
+	} `json:"osd_xinfo"`
+	Osds []struct {
+		ClusterAddr        string   `json:"cluster_addr"`
+		DownAt             int64    `json:"down_at"`
+		HeartbeatBackAddr  string   `json:"heartbeat_back_addr"`
+		HeartbeatFrontAddr string   `json:"heartbeat_front_addr"`
+		In                 int64    `json:"in"`
+		LastCleanBegin     int64    `json:"last_clean_begin"`
+		LastCleanEnd       int64    `json:"last_clean_end"`
+		LostAt             int64    `json:"lost_at"`
+		Osd                int64    `json:"osd"`
+		PrimaryAffinity    float64  `json:"primary_affinity"`
+		PublicAddr         string   `json:"public_addr"`
+		State              []string `json:"state"`
+		Up                 int64    `json:"up"`
+		UpFrom             int64    `json:"up_from"`
+		UpThru             int64    `json:"up_thru"`
+		UUID               string   `json:"uuid"`
+		Weight             float64  `json:"weight"`
+	} `json:"osds"`
+	PgTemp       []interface{} `json:"pg_temp"`
+	PgUpmap      []interface{} `json:"pg_upmap"`
+	PgUpmapItems []interface{} `json:"pg_upmap_items"`
+	PoolMax      int64         `json:"pool_max"`
+	Pools        []struct {
+		ApplicationMetadata struct {
+			Rbd struct{} `json:"rbd"`
+			Rgw struct{} `json:"rgw"`
+		} `json:"application_metadata"`
+		Auid                           int64         `json:"auid"`
+		CacheMinEvictAge               int64         `json:"cache_min_evict_age"`
+		CacheMinFlushAge               int64         `json:"cache_min_flush_age"`
+		CacheMode                      string        `json:"cache_mode"`
+		CacheTargetDirtyHighRatioMicro int64         `json:"cache_target_dirty_high_ratio_micro"`
+		CacheTargetDirtyRatioMicro     int64         `json:"cache_target_dirty_ratio_micro"`
+		CacheTargetFullRatioMicro      int64         `json:"cache_target_full_ratio_micro"`
+		CreateTime                     string        `json:"create_time"`
+		CrushRule                      int64         `json:"crush_rule"`
+		ErasureCodeProfile             string        `json:"erasure_code_profile"`
+		ExpectedNumObjects             int64         `json:"expected_num_objects"`
+		FastRead                       bool          `json:"fast_read"`
+		Flags                          int64         `json:"flags"`
+		FlagsNames                     string        `json:"flags_names"`
+		GradeTable                     []interface{} `json:"grade_table"`
+		HitSetCount                    int64         `json:"hit_set_count"`
+		HitSetGradeDecayRate           int64         `json:"hit_set_grade_decay_rate"`
+		HitSetParams                   struct {
+			Type string `json:"type"`
+		} `json:"hit_set_params"`
+		HitSetPeriod                 int64         `json:"hit_set_period"`
+		HitSetSearchLastN            int64         `json:"hit_set_search_last_n"`
+		LastChange                   string        `json:"last_change"`
+		LastForceOpResend            string        `json:"last_force_op_resend"`
+		LastForceOpResendPreluminous string        `json:"last_force_op_resend_preluminous"`
+		MinReadRecencyForPromote     int64         `json:"min_read_recency_for_promote"`
+		MinSize                      int64         `json:"min_size"`
+		MinWriteRecencyForPromote    int64         `json:"min_write_recency_for_promote"`
+		ObjectHash                   int64         `json:"object_hash"`
+		Options                      struct{}      `json:"options"`
+		PgNum                        int64         `json:"pg_num"`
+		PgPlacementNum               int64         `json:"pg_placement_num"`
+		Pool                         int64         `json:"pool"`
+		PoolName                     string        `json:"pool_name"`
+		PoolSnaps                    []interface{} `json:"pool_snaps"`
+		QuotaMaxBytes                int64         `json:"quota_max_bytes"`
+		QuotaMaxObjects              int64         `json:"quota_max_objects"`
+		ReadTier                     int64         `json:"read_tier"`
+		RemovedSnaps                 string        `json:"removed_snaps"`
+		Size                         int64         `json:"size"`
+		SnapEpoch                    int64         `json:"snap_epoch"`
+		SnapMode                     string        `json:"snap_mode"`
+		SnapSeq                      int64         `json:"snap_seq"`
+		StripeWidth                  int64         `json:"stripe_width"`
+		TargetMaxBytes               int64         `json:"target_max_bytes"`
+		TargetMaxObjects             int64         `json:"target_max_objects"`
+		TierOf                       int64         `json:"tier_of"`
+		Tiers                        []interface{} `json:"tiers"`
+		Type                         int64         `json:"type"`
+		UseGmtHitset                 bool          `json:"use_gmt_hitset"`
+		WriteTier                    int64         `json:"write_tier"`
+	} `json:"pools"`
+	PrimaryTemp            []interface{} `json:"primary_temp"`
+	RemovedSnapsQueue      []interface{} `json:"removed_snaps_queue"`
+	RequireMinCompatClient string        `json:"require_min_compat_client"`
+	RequireOsdRelease      string        `json:"require_osd_release"`
 }
 
 type PlacementGroup struct {
