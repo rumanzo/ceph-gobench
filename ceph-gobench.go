@@ -31,14 +31,12 @@ func main() {
 	for i := 0; i < 2*params.threadsCount; i++ {
 		buffs = append(buffs, make([]byte, params.blocksize))
 	}
-
 	for num := range buffs {
 		_, err := rand.Read(buffs[num])
 		if err != nil {
 			log.Fatalln(err)
 		}
 	}
-	osds := GetOsds(cephconn, params)
-	log.Println(osds)
 
+	GetOsds(cephconn, params)
 }
