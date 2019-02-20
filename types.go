@@ -62,6 +62,7 @@ type Device struct {
 	Class string `json:"class"`
 	ID    int64  `json:"id"`
 	Name  string `json:"name"`
+	Info  OsdMetadata
 }
 
 type OsdCrushDump struct {
@@ -329,4 +330,52 @@ type PlacementGroup struct {
 	Up           []int64 `json:"up"`
 	UpPrimary    int64   `json:"up_primary"`
 	Version      string  `json:"version"`
+}
+
+type OsdMetadata struct {
+	Arch                       string `json:"arch"`
+	BackAddr                   string `json:"back_addr"`
+	BackIface                  string `json:"back_iface"`
+	Bluefs                     string `json:"bluefs"`
+	BluefsSingleSharedDevice   string `json:"bluefs_single_shared_device"`
+	BluestoreBdevAccessMode    string `json:"bluestore_bdev_access_mode"`
+	BluestoreBdevBlockSize     string `json:"bluestore_bdev_block_size"`
+	BluestoreBdevDev           string `json:"bluestore_bdev_dev"`
+	BluestoreBdevDevNode       string `json:"bluestore_bdev_dev_node"`
+	BluestoreBdevDriver        string `json:"bluestore_bdev_driver"`
+	BluestoreBdevModel         string `json:"bluestore_bdev_model"`
+	BluestoreBdevPartitionPath string `json:"bluestore_bdev_partition_path"`
+	BluestoreBdevRotational    string `json:"bluestore_bdev_rotational"`
+	BluestoreBdevSize          string `json:"bluestore_bdev_size"`
+	BluestoreBdevType          string `json:"bluestore_bdev_type"`
+	CephRelease                string `json:"ceph_release"`
+	CephVersion                string `json:"ceph_version"`
+	CephVersionShort           string `json:"ceph_version_short"`
+	CPU                        string `json:"cpu"`
+	DefaultDeviceClass         string `json:"default_device_class"`
+	Devices                    string `json:"devices"`
+	Distro                     string `json:"distro"`
+	DistroDescription          string `json:"distro_description"`
+	DistroVersion              string `json:"distro_version"`
+	FrontAddr                  string `json:"front_addr"`
+	FrontIface                 string `json:"front_iface"`
+	HbBackAddr                 string `json:"hb_back_addr"`
+	HbFrontAddr                string `json:"hb_front_addr"`
+	Hostname                   string `json:"hostname"`
+	ID                         int64  `json:"id"`
+	JournalRotational          string `json:"journal_rotational"`
+	KernelDescription          string `json:"kernel_description"`
+	KernelVersion              string `json:"kernel_version"`
+	MemSwapKb                  string `json:"mem_swap_kb"`
+	MemTotalKb                 string `json:"mem_total_kb"`
+	Os                         string `json:"os"`
+	OsdData                    string `json:"osd_data"`
+	OsdObjectstore             string `json:"osd_objectstore"`
+	Rotational                 string `json:"rotational"`
+}
+
+type BenchOsd struct {
+	Osds    []Device
+	Buffs   *[][]byte
+	Offsets []int64
 }
