@@ -6,11 +6,11 @@ import (
 )
 
 type Params struct {
-	duration                                               time.Duration
-	threadsCount                                           int
-	blocksize                                              uint64
-	parallel                                               bool
-	bs, cluster, user, keyring, config, pool, mode, define string
+	duration                                                   time.Duration
+	threadsCount                                               int64
+	blocksize, objectsize                                      int64
+	parallel                                                   bool
+	bs, os, cluster, user, keyring, config, pool, mode, define string
 }
 
 type Cephconnection struct {
@@ -372,10 +372,4 @@ type OsdMetadata struct {
 	OsdData                    string `json:"osd_data"`
 	OsdObjectstore             string `json:"osd_objectstore"`
 	Rotational                 string `json:"rotational"`
-}
-
-type BenchOsd struct {
-	Osds    []Device
-	Buffs   *[][]byte
-	Offsets []int64
 }
