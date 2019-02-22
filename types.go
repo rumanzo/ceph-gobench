@@ -62,7 +62,7 @@ type Device struct {
 	Class string `json:"class"`
 	ID    int64  `json:"id"`
 	Name  string `json:"name"`
-	Info  *OsdMetadata
+	Info  OsdMetadata
 }
 
 type OsdCrushDump struct {
@@ -375,7 +375,7 @@ type OsdMetadata struct {
 }
 
 type BenchOsd struct {
-	Osds    []*Device
+	Osds    []Device
 	Buffs   *[][]byte
-	Offsets *[]int64
+	Offsets []int64
 }
