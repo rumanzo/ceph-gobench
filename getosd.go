@@ -67,18 +67,22 @@ func GetOsdMetadata(cephconn *Cephconnection) []OsdMetadata {
 	return monanswer
 }
 
+func GetObjActingPrimary(cephconn *Cephconnection, params Params, objname string) int64 {
+	monrawanswer := MakeMonQuery(cephconn, map[string]string{"prefix": "osd map", "pool": params.pool,
+		"object": objname, "format": "json"})
+	var monanswer OsdMap
+	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
+		log.Fatalf("Can't parse monitor answer. Error: %v", err)
+	}
+	return monanswer.UpPrimary
+}
+
 func GetCrushHostBuckets(buckets []Bucket, itemid int64) []Bucket {
 	var rootbuckets []Bucket
 	for _, bucket := range buckets {
 		if bucket.ID == itemid {
 			if bucket.TypeName == "host" {
 				rootbuckets = append(rootbuckets, bucket)
-				for _, item := range bucket.Items {
-					result := GetCrushHostBuckets(buckets, item.ID)
-					for _, it := range result {
-						rootbuckets = append(rootbuckets, it)
-					}
-				}
 			} else {
 				for _, item := range bucket.Items {
 					result := GetCrushHostBuckets(buckets, item.ID)
@@ -92,15 +96,14 @@ func GetCrushHostBuckets(buckets []Bucket, itemid int64) []Bucket {
 	return rootbuckets
 }
 
-func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDump, poolinfo Poolinfo, osdsmetadata []OsdMetadata) map[string][]Device {
-	var crushrule int64
+func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDump, poolinfo Poolinfo, osdsmetadata []OsdMetadata) []Device {
+	var crushrule, rootid int64
 	var crushrulename string
 	for _, pool := range osddump.Pools {
 		if pool.Pool == poolinfo.PoolId {
 			crushrule = pool.CrushRule
 		}
 	}
-	var rootid int64
 	for _, rule := range osdcrushdump.Rules {
 		if rule.RuleID == crushrule {
 			crushrulename = rule.RuleName
@@ -112,7 +115,7 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 		}
 	}
 
-	osdhosts := make(map[string][]Device)
+	osddevices := []Device{}
 	bucketitems := GetCrushHostBuckets(osdcrushdump.Buckets, rootid)
 	if params.define != "" {
 		if strings.HasPrefix(params.define, "osd.") {
@@ -123,7 +126,7 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 							for _, osdmetadata := range osdsmetadata {
 								if osdmetadata.ID == device.ID {
 									device.Info = osdmetadata
-									osdhosts[hostbucket.Name] = append(osdhosts[hostbucket.Name], device)
+									osddevices = append(osddevices, device)
 								}
 
 							}
@@ -131,7 +134,7 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 					}
 				}
 			}
-			if len(osdhosts) == 0 {
+			if len(osddevices) == 0 {
 				log.Fatalf("Defined osd not exist in root for rule: %v pool: %v.\nYou should define osd like osd.X",
 					crushrulename, poolinfo.Pool)
 			}
@@ -144,7 +147,7 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 								for _, osdmetadata := range osdsmetadata {
 									if osdmetadata.ID == device.ID {
 										device.Info = osdmetadata
-										osdhosts[hostbucket.Name] = append(osdhosts[hostbucket.Name], device)
+										osddevices = append(osddevices, device)
 									}
 
 								}
@@ -153,7 +156,7 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 					}
 				}
 			}
-			if len(osdhosts) == 0 {
+			if len(osddevices) == 0 {
 				log.Fatalf("Defined host not exist in root for rule: %v pool: %v", crushrulename, poolinfo.Pool)
 			}
 		}
@@ -168,16 +171,16 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 							}
 
 						}
-						osdhosts[hostbucket.Name] = append(osdhosts[hostbucket.Name], device)
+						osddevices = append(osddevices, device)
 					}
 				}
 			}
 		}
-		if len(osdhosts) == 0 {
+		if len(osddevices) == 0 {
 			log.Fatalf("Osd not exist in root for rule: %v pool: %v", crushrulename, poolinfo.Pool)
 		}
 	}
-	return osdhosts
+	return osddevices
 }
 
 func ContainsPg(pgs []PlacementGroup, i int64) bool {
@@ -189,7 +192,7 @@ func ContainsPg(pgs []PlacementGroup, i int64) bool {
 	return false
 }
 
-func GetOsds(cephconn *Cephconnection, params Params) map[string][]Device {
+func GetOsds(cephconn *Cephconnection, params Params) []Device {
 	poolinfo := GetPoolSize(cephconn, params)
 	if poolinfo.Size != 1 {
 		log.Fatalf("Pool size must be 1. Current size for pool %v is %v. Don't forget that it must be useless pool (not production). Do:\n # ceph osd pool set %v min_size 1\n # ceph osd pool set %v size 1",
@@ -200,11 +203,9 @@ func GetOsds(cephconn *Cephconnection, params Params) map[string][]Device {
 	osddump := GetOsdDump(cephconn)
 	osdsmetadata := GetOsdMetadata(cephconn)
 	osddevices := GetOsdForLocations(params, crushosddump, osddump, poolinfo, osdsmetadata)
-	for _, devices := range osddevices {
-		for _, item := range devices {
-			if exist := ContainsPg(placementGroups, item.ID); exist == false {
-				log.Fatalln("Not enough pg for test. Some osd haven't placement group at all. Increase pg_num and pgp_num")
-			}
+	for _, device := range osddevices {
+		if exist := ContainsPg(placementGroups, device.ID); exist == false {
+			log.Fatalln("Not enough pg for test. Some osd haven't placement group at all. Increase pg_num and pgp_num")
 		}
 	}
 	return osddevices

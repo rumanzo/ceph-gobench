@@ -373,3 +373,16 @@ type OsdMetadata struct {
 	OsdObjectstore             string `json:"osd_objectstore"`
 	Rotational                 string `json:"rotational"`
 }
+
+type OsdMap struct {
+	Acting        []int64 `json:"acting"`
+	ActingPrimary int64   `json:"acting_primary"`
+	Epoch         int64   `json:"epoch"`
+	Objname       string  `json:"objname"`
+	Pgid          string  `json:"pgid"`
+	Pool          string  `json:"pool"`
+	PoolID        int64   `json:"pool_id"`
+	RawPgid       string  `json:"raw_pgid"`
+	Up            []int64 `json:"up"`
+	UpPrimary     int64   `json:"up_primary"`
+}

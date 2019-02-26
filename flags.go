@@ -5,13 +5,14 @@ import (
 	"github.com/juju/gnuflag"
 	"log"
 	"strings"
+	"time"
 )
 
 func Route() Params {
 	params := Params{}
-	gnuflag.DurationVar(&params.duration, "duration", 30,
+	gnuflag.DurationVar(&params.duration, "duration", 30*time.Second,
 		"Time limit for each test in seconds")
-	gnuflag.DurationVar(&params.duration, "d", 30,
+	gnuflag.DurationVar(&params.duration, "d", 30*time.Second,
 		"Time limit for each test in seconds")
 	gnuflag.StringVar(&params.bs, "blocksize", "4K",
 		"Block size in format  KB = K = KiB	= 1024 MB = M = MiB = 1024 * K GB = G = GiB = 1024 * M TB = T = TiB = 1024 * G")

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -30,9 +31,17 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, offset [
 	wg *sync.WaitGroup, result chan []string) {
 	defer wg.Done()
 	threadresult := make(chan string, params.threadsCount)
-	var osdresults []string
-	for i := int64(0); i < params.threadsCount; i++ {
-		go bench_thread(cephconn, osddevice, buffs, offset[i], params, threadresult, i)
+	var osdresults, objectnames []string
+
+	// calculate object for each thread
+	for suffix := 0; len(objectnames) < int(params.threadsCount); suffix++ {
+		name := "bench_" + strconv.Itoa(suffix)
+		if osddevice.ID == GetObjActingPrimary(cephconn, *params, name) {
+			objectnames = append(objectnames, name)
+		}
+	}
+	for i, j := 0, 0; i < int(params.threadsCount); i, j = i+1, j+2 {
+		go bench_thread(cephconn, osddevice, (*buffs)[j:j+2], offset[i], params, threadresult, objectnames[i])
 	}
 	for i := int64(0); i < params.threadsCount; i++ {
 		osdresults = append(osdresults, <-threadresult)
@@ -41,10 +50,39 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, offset [
 	result <- osdresults
 }
 
-func bench_thread(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, offset []int64, params *Params,
-	result chan string, threadnum int64) {
-	time.Sleep(time.Second * time.Duration(1)) // prepare objects
-	result <- fmt.Sprintf("Host: %v Osdname: %v Threadnum: %v", osddevice.Info.Hostname, osddevice.Name, threadnum)
+func bench_thread(cephconn *Cephconnection, osddevice Device, buffs [][]byte, offsets []int64, params *Params,
+	result chan string, objname string) {
+	defer cephconn.ioctx.Delete(objname)
+	starttime := time.Now()
+	var latencies []time.Duration
+	endtime := starttime.Add(params.duration)
+	n := 0
+	for {
+		if time.Now().After(endtime) {
+			break
+		}
+		for _, offset := range offsets {
+			if time.Now().Before(endtime) {
+				startwritetime := time.Now()
+				err := cephconn.ioctx.Write(objname, buffs[n], uint64(offset))
+				endwritetime := time.Now()
+				if err != nil {
+					log.Printf("Can't write obj: %v, osd: %v", objname, osddevice.Name)
+					continue
+				}
+				latencies = append(latencies, endwritetime.Sub(startwritetime))
+			} else {
+				break
+			}
+		}
+		if n == 0 {
+			n++
+		} else {
+			n = 0
+		}
+	}
+	result <- fmt.Sprintf("Host: %v Osdname: %v Object: %v\n Latencies: %v\n Writes: %v", osddevice.Info.Hostname,
+		osddevice.Name, objname, latencies, len(latencies))
 }
 
 func main() {
@@ -84,6 +122,7 @@ func main() {
 	if params.parallel == true {
 		go func() {
 			wg.Wait()
+			time.Sleep(time.Second)
 			close(results)
 		}()
 
