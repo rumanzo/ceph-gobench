@@ -27,14 +27,12 @@ func makeoffsets(threads int64, bs int64, objsize int64) [][]int64 {
 }
 
 func bench(cephconn *Cephconnection, osddevice Device, host string, buffs *[][]byte, offset [][]int64, params *Params,
-	wg *sync.WaitGroup, ready chan bool, result chan string, allready uint64) {
+	wg *sync.WaitGroup, result chan string) {
 	var nwg sync.WaitGroup
-	tready := make(chan bool, params.threadsCount)
-	start := uint64(0)
 	defer wg.Done()
 	for i := int64(0); i < params.threadsCount; i++ {
 		nwg.Add(1)
-		go _bench(cephconn, osddevice, host, buffs, offset[i], params, &nwg, i, tready, result, &start)
+		go _bench(cephconn, osddevice, host, buffs, offset[i], params, &nwg, result)
 		if params.parallel != true {
 			nwg.Wait()
 		}
@@ -43,16 +41,10 @@ func bench(cephconn *Cephconnection, osddevice Device, host string, buffs *[][]b
 }
 
 func _bench(cephconn *Cephconnection, osddevice Device, host string, buffs *[][]byte, offset []int64, params *Params,
-	wg *sync.WaitGroup, i int64, ready chan bool, result chan string, start *uint64) {
+	wg *sync.WaitGroup, result chan string) {
 	defer wg.Done()
-	time.Sleep(time.Second * time.Duration(i)) // prepare objects
-	ready <- true
-	for {
-		if *start == 1 {
-			break
-		}
-	}
-	log.Println(host, i, osddevice.Name) //somework
+	time.Sleep(time.Second * time.Duration(1)) // prepare objects
+	log.Println(host, osddevice.Name)          //somework
 	result <- fmt.Sprintf("Host: %v\nOsdname: %v", host, osddevice.Name)
 }
 
@@ -78,16 +70,14 @@ func main() {
 	offsets := makeoffsets(params.threadsCount, params.blocksize, params.objectsize)
 
 	var wg sync.WaitGroup
-	var allready uint64
-	var ready chan bool
-	var result chan string
+	result := make(chan string, len(offsets))
 	for host, osds := range osddevices {
 		for _, osd := range osds {
 			wg.Add(1)
 			if params.parallel == true {
-				go bench(cephconn, osd, host, &buffs, offsets, &params, &wg, ready, result, allready)
+				go bench(cephconn, osd, host, &buffs, offsets, &params, &wg, result)
 			} else {
-				bench(cephconn, osd, host, &buffs, offsets, &params, &wg, ready, result, allready)
+				bench(cephconn, osd, host, &buffs, offsets, &params, &wg, result)
 			}
 		}
 	}

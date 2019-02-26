@@ -113,7 +113,6 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 	}
 
 	osdhosts := make(map[string][]Device)
-	//var devices []Device
 	bucketitems := GetCrushHostBuckets(osdcrushdump.Buckets, rootid)
 	if params.define != "" {
 		if strings.HasPrefix(params.define, "osd.") {
