@@ -40,16 +40,27 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, bs int64
 		}
 	}
 	close(threadresult)
-	latencygrade := map[int]int{}
+	latencygrade := map[int64]int{}
+	latencyavg := map[int64]int64{}
+	latencytotal := int64(0)
 	for _, lat := range osdlatencies {
+		micro := lat.Nanoseconds()/1000
+		rounded := micro
 		switch {
-		case lat < time.Millisecond*10:
-			latencygrade[int(lat.Round(time.Millisecond).Nanoseconds()/1000000)]++
-		case lat < time.Millisecond*100:
-			latencygrade[int(lat.Round(time.Millisecond*10)/1000000)]++
-		default:
-			latencygrade[int(lat.Round(time.Millisecond*100)/1000000)]++
+		case micro < 1000: // 0-1ms round to 0.1ms
+			rounded = (micro/100)*100
+		case micro < 10000: // 2-10ms round to 1ms
+			rounded = (micro/1000)*1000
+		case micro < 100000: // 10-100ms round to 10ms
+			rounded = (micro/10000)*10000
+		case micro < 1000000: // 100-1000ms round to 100ms
+			rounded = (micro/100000)*100000
+		default: // 1000+ms round to 1s
+			rounded = (micro/1000000)*1000000
 		}
+		latencytotal += micro
+		latencygrade[rounded]++
+		latencyavg[rounded] += micro
 	}
 
 	var buffer bytes.Buffer
@@ -83,31 +94,37 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, bs int64
 	}
 
 	//sort latencies
-	var keys []int
+	var keys []int64
 	for k := range latencygrade {
 		keys = append(keys, k)
+		latencyavg[k] /= int64(latencygrade[k])
 	}
-	sort.Ints(keys)
+	latencytotal = latencytotal/int64(len(osdlatencies))
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
 	for _, k := range keys {
 		var blocks bytes.Buffer
 		var mseconds string
 		switch {
-		case 10 <= k && k < 20:
-			mseconds = green(fmt.Sprintf("[%v-%v]", k, k+9))
-		case 20 <= k && k < 100:
-			mseconds = red(fmt.Sprintf("[%v-%v]", k, k+9))
-		case k >= 100:
-			mseconds = darkred(fmt.Sprintf("[%v-%v]", k, k+99))
+		case k < 1000:
+			mseconds = green(fmt.Sprintf("[%.1f-%.1f)", float64(k)/1000, 0.1+float64(k)/1000))
+		case k < 2000:
+			mseconds = yellow(fmt.Sprintf("[%.1f-%.1f)", float64(k)/1000, 0.1+float64(k)/1000))
+		case k < 10000:
+			mseconds = yellow(fmt.Sprintf("[%3v-%3v)", k/1000, 1+k/1000))
+		case k < 100000:
+			mseconds = red(fmt.Sprintf("[%3v-%3v)", k/1000, 10+k/1000))
+		case k < 1000000:
+			mseconds = darkred(fmt.Sprintf("[%3v-%3v]", k/1000, 99+k/1000))
 		default:
-			mseconds = green(k)
+			mseconds = darkred(fmt.Sprintf("[%2vs-%2vs]", k/1000000, 1+k/1000000))
 		}
 		for i := 0; i < 50*(latencygrade[k]*100/len(osdlatencies))/100; i++ {
 			blocks.WriteString("#")
 		}
-		iops := latencygrade[k] / int(params.duration.Seconds())
-		avgspeed := (float64(latencygrade[k]) * float64(params.blocksize) / float64(params.duration.Seconds())) / 1024 / 1024 //mb/sec
+		iops := int64(latencygrade[k]) * 1000 / latencyavg[k]
+		avgspeed := (float64(latencygrade[k]) * float64(params.blocksize) / float64(latencyavg[k])) / 1024 / 1024 //mb/sec
 		megabyteswritten := (float64(latencygrade[k]) * float64(params.blocksize)) / 1024 / 1024
-		buffer.WriteString(fmt.Sprintf("%+9v ms: [%-50v]    Count: %-5v    IOPS: %-5v    Avg speed: %-6.3f Mb/Sec    Summary written: %6.3f Mb\n",
+		buffer.WriteString(fmt.Sprintf("%+9v ms: [%-50v]    Count: %-5v    IOPS: %-5v    Avg speed: %-6.3f Mb/Sec    Total written: %6.3f Mb\n",
 			mseconds, blocks.String(), latencygrade[k], iops, avgspeed, megabyteswritten))
 	}
 	result <- buffer.String()
