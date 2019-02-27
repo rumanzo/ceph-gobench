@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, bs int64, objsize int64, params *Params,
+func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, startbuf *[]byte, params *Params,
 	wg *sync.WaitGroup, result chan string) {
 	defer wg.Done()
 	threadresult := make(chan []time.Duration, params.threadsCount)
@@ -29,10 +29,13 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, bs int64
 		name := "bench_" + strconv.Itoa(suffix)
 		if osddevice.ID == GetObjActingPrimary(cephconn, *params, name) {
 			objectnames = append(objectnames, name)
+			if err := cephconn.ioctx.WriteFull(name, *startbuf); err != nil {
+				log.Printf("Can't write object: %v, osd: %v", name, osddevice.Name)
+			}
 		}
 	}
 	for i := 0; i < int(params.threadsCount); i++ {
-		go bench_thread(cephconn, osddevice, (*buffs)[i*2:i*2+2], bs, objsize, params, threadresult, objectnames[i*16:i*16+16])
+		go BenchThread(cephconn, osddevice, (*buffs)[i*2:i*2+2], params, threadresult, objectnames[i*16:i*16+16])
 	}
 	for i := int64(0); i < params.threadsCount; i++ {
 		for _, lat := range <-threadresult {
@@ -43,19 +46,19 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, bs int64
 	latencygrade := map[int64]int{}
 	latencytotal := int64(0)
 	for _, lat := range osdlatencies {
-		micro := lat.Nanoseconds()/1000
+		micro := lat.Nanoseconds() / 1000
 		rounded := micro
 		switch {
 		case micro < 1000: // 0-1ms round to 0.1ms
-			rounded = (micro/100)*100
+			rounded = (micro / 100) * 100
 		case micro < 10000: // 2-10ms round to 1ms
-			rounded = (micro/1000)*1000
+			rounded = (micro / 1000) * 1000
 		case micro < 100000: // 10-100ms round to 10ms
-			rounded = (micro/10000)*10000
+			rounded = (micro / 10000) * 10000
 		case micro < 1000000: // 100-1000ms round to 100ms
-			rounded = (micro/100000)*100000
+			rounded = (micro / 100000) * 100000
 		default: // 1000+ms round to 1s
-			rounded = (micro/1000000)*1000000
+			rounded = (micro / 1000000) * 1000000
 		}
 		latencytotal += micro
 		latencygrade[rounded]++
@@ -91,7 +94,7 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, bs int64
 		}
 	}
 
-	latencytotal = latencytotal/int64(len(osdlatencies))
+	latencytotal = latencytotal / int64(len(osdlatencies))
 	// iops = 1s / latency
 	iops := 1000000 / latencytotal
 	// avg speed = iops * block size / 1 MB
@@ -123,7 +126,7 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, bs int64
 		case k < 2000:
 			mseconds = yellow(fmt.Sprintf("[%.1f-%.1f)", float64(k)/1000, 0.1+float64(k)/1000))
 		case k < 10000:
-			mseconds = yellow(fmt.Sprintf("[%3v-%3v)", k/1000, 1+k/1000))
+			mseconds = yellow(fmt.Sprintf("[%.1f-%.1f)", float64(k/1000), float64(1+k/1000)))
 		case k < 100000:
 			mseconds = red(fmt.Sprintf("[%3v-%3v)", k/1000, 10+k/1000))
 		case k < 1000000:
@@ -141,7 +144,7 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, bs int64
 	result <- buffer.String()
 }
 
-func bench_thread(cephconn *Cephconnection, osddevice Device, buffs [][]byte, bs int64, objsize int64, params *Params,
+func BenchThread(cephconn *Cephconnection, osddevice Device, buffs [][]byte, params *Params,
 	result chan []time.Duration, objnames []string) {
 
 	starttime := time.Now()
@@ -149,7 +152,7 @@ func bench_thread(cephconn *Cephconnection, osddevice Device, buffs [][]byte, bs
 	endtime := starttime.Add(params.duration)
 	n := 0
 	for {
-		offset := rand.Int63n(objsize/bs) * bs
+		offset := rand.Int63n(params.objectsize/params.blocksize) * params.blocksize
 		objname := objnames[rand.Int31n(int32(len(objnames)))]
 		startwritetime := time.Now()
 		if startwritetime.After(endtime) {
@@ -158,7 +161,7 @@ func bench_thread(cephconn *Cephconnection, osddevice Device, buffs [][]byte, bs
 		err := cephconn.ioctx.Write(objname, buffs[n], uint64(offset))
 		endwritetime := time.Now()
 		if err != nil {
-			log.Printf("Can't write obj: %v, osd: %v", objname, osddevice.Name)
+			log.Printf("Can't write object: %v, osd: %v", objname, osddevice.Name)
 			continue
 		}
 		latencies = append(latencies, endwritetime.Sub(startwritetime))
@@ -183,6 +186,8 @@ func main() {
 	for i := int64(0); i < 2*params.threadsCount; i++ {
 		buffs = append(buffs, make([]byte, params.blocksize))
 	}
+	startbuff := make([]byte, params.objectsize)
+	rand.Read(startbuff)
 	for num := range buffs {
 		_, err := rand.Read(buffs[num])
 		if err != nil {
@@ -196,9 +201,9 @@ func main() {
 	for _, osd := range osddevices {
 		wg.Add(1)
 		if params.parallel == true {
-			go bench(cephconn, osd, &buffs, params.blocksize, params.objectsize, &params, &wg, results)
+			go bench(cephconn, osd, &buffs, &startbuff, &params, &wg, results)
 		} else {
-			bench(cephconn, osd, &buffs, params.blocksize, params.objectsize, &params, &wg, results)
+			bench(cephconn, osd, &buffs, &startbuff, &params, &wg, results)
 			log.Println(<-results)
 		}
 
