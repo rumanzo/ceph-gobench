@@ -41,7 +41,6 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, bs int64
 	}
 	close(threadresult)
 	latencygrade := map[int64]int{}
-	latencyavg := map[int64]int64{}
 	latencytotal := int64(0)
 	for _, lat := range osdlatencies {
 		micro := lat.Nanoseconds()/1000
@@ -60,7 +59,6 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, bs int64
 		}
 		latencytotal += micro
 		latencygrade[rounded]++
-		latencyavg[rounded] += micro
 	}
 
 	var buffer bytes.Buffer
@@ -93,13 +91,18 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, bs int64
 		}
 	}
 
+	latencytotal = latencytotal/int64(len(osdlatencies))
+	// iops = 1 / latency
+	// avg speed = iops * block size / 1 MB
+	avgspeed := (1000000 / float64(latencytotal) * float64(params.blocksize) / 1024 / 1024)
+	buffer.WriteString(green(fmt.Sprintf("Avg iops: %-5v       Avg speed: %.3f MB/s\n\n",
+		1000000/latencytotal, avgspeed)))
+
 	//sort latencies
 	var keys []int64
 	for k := range latencygrade {
 		keys = append(keys, k)
-		latencyavg[k] /= int64(latencygrade[k])
 	}
-	latencytotal = latencytotal/int64(len(osdlatencies))
 	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
 	for _, k := range keys {
 		var blocks bytes.Buffer
@@ -121,11 +124,9 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, bs int64
 		for i := 0; i < 50*(latencygrade[k]*100/len(osdlatencies))/100; i++ {
 			blocks.WriteString("#")
 		}
-		iops := int64(latencygrade[k]) * 1000 / latencyavg[k]
-		avgspeed := (float64(latencygrade[k]) * float64(params.blocksize) / float64(latencyavg[k])) / 1024 / 1024 //mb/sec
 		megabyteswritten := (float64(latencygrade[k]) * float64(params.blocksize)) / 1024 / 1024
-		buffer.WriteString(fmt.Sprintf("%+9v ms: [%-50v]    Count: %-5v    IOPS: %-5v    Avg speed: %-6.3f Mb/Sec    Total written: %6.3f Mb\n",
-			mseconds, blocks.String(), latencygrade[k], iops, avgspeed, megabyteswritten))
+		buffer.WriteString(fmt.Sprintf("%+9v ms: [%-50v]    Count: %-5v    Total written: %6.3f MB\n",
+			mseconds, blocks.String(), latencygrade[k], megabyteswritten))
 	}
 	result <- buffer.String()
 }
