@@ -73,26 +73,48 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, startbuf
 	green := color.New(color.FgHiGreen).SprintFunc()
 	darkgreen := color.New(color.FgGreen).SprintFunc()
 	buffer.WriteString(fmt.Sprintf("Bench result for %v\n", osddevice.Name))
-	infos := map[string]string{"front_addr": strings.Split(osddevice.Info.FrontAddr, "/")[0],
-		"ceph_release/version": osddevice.Info.CephRelease + "/" + osddevice.Info.CephVersionShort, "cpu": osddevice.Info.CPU,
-		"hostname": osddevice.Info.Hostname, "default_device_class": osddevice.Info.DefaultDeviceClass, "devices": osddevice.Info.Devices,
-		"distro_description": osddevice.Info.DistroDescription, "journal_rotational": osddevice.Info.JournalRotational,
-		"rotational": osddevice.Info.Rotational, "kernel_version": osddevice.Info.KernelVersion, "mem_swap_kb": osddevice.Info.MemSwapKb,
-		"mem_total_kb": osddevice.Info.MemTotalKb, "osd_data": osddevice.Info.OsdData, "osd_objectstore": osddevice.Info.OsdObjectstore}
-	infonum := 1
+	infos := map[string]string{
+		"front_addr": strings.Split(osddevice.Info.FrontAddr, "/")[0],
+		"ceph_release/version": osddevice.Info.CephRelease + "/" + osddevice.Info.CephVersionShort,
+		"cpu": osddevice.Info.CPU,
+		"hostname": osddevice.Info.Hostname,
+		"default_device_class": osddevice.Info.DefaultDeviceClass,
+		"devices": osddevice.Info.Devices,
+		"distro_description": osddevice.Info.DistroDescription,
+		"journal_rotational": osddevice.Info.JournalRotational,
+		"rotational": osddevice.Info.Rotational,
+		"kernel_version": osddevice.Info.KernelVersion,
+		"mem_swap_kb": osddevice.Info.MemSwapKb,
+		"mem_total_kb": osddevice.Info.MemTotalKb,
+		"osd_data": osddevice.Info.OsdData,
+		"osd_objectstore": osddevice.Info.OsdObjectstore,
+	}
 	var infokeys []string
+	width := []int{0, 0, 0, 0, 0, 0}
 	for k := range infos {
 		infokeys = append(infokeys, k)
 	}
 	sort.Strings(infokeys)
-	buffer.WriteString(fmt.Sprintf("%-30v %-45v", darkgreen("osdname"), red(osddevice.Name)))
-	for _, key := range infokeys {
-		infonum++
-		buffer.WriteString(fmt.Sprintf("%-30v %-45v", darkgreen(key), yellow(infos[key])))
-		if (infonum % 3) == 0 {
-			buffer.WriteString("\n")
+	for n, key := range infokeys {
+		if width[n % 3] < len(key) {
+			width[n % 3] = len(key)
+		}
+		if width[3 + n % 3] < len(infos[key]) {
+			width[3 + n % 3] = len(infos[key])
 		}
 	}
+	buffer.WriteString(
+		darkgreen("osdname") + strings.Repeat(" ", width[2]-len("osdname")+2) +
+		red(osddevice.Name) + strings.Repeat(" ", width[5]-len(osddevice.Name)+2))
+	for infonum, key := range infokeys {
+		if (infonum % 3) == 2 {
+			buffer.WriteString("\n")
+		}
+		buffer.WriteString(
+			darkgreen(key) + strings.Repeat(" ", width[infonum % 3]-len(key)+2) +
+			yellow(infos[key]) + strings.Repeat(" ", width[3 + infonum % 3]-len(infos[key])+2))
+	}
+	buffer.WriteString("\n\n")
 
 	latencytotal = latencytotal / int64(len(osdlatencies))
 	// iops = 1s / latency
