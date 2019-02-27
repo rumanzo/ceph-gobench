@@ -122,25 +122,25 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, startbuf
 		var mseconds string
 		switch {
 		case k < 1000:
-			mseconds = green(fmt.Sprintf("[%-3.1f-%-3.1f)", float64(k)/1000, 0.1+float64(k)/1000))
+			mseconds = green(fmt.Sprintf("[%.1f-%.1f)", float64(k)/1000, 0.1+float64(k)/1000))
 		case k < 2000:
-			mseconds = yellow(fmt.Sprintf("[%-3.1f-%-3.1f)", float64(k)/1000, 0.1+float64(k)/1000))
+			mseconds = yellow(fmt.Sprintf("[%.1f-%.1f)", float64(k)/1000, 0.1+float64(k)/1000))
 		case k < 9000:
-			mseconds = yellow(fmt.Sprintf("[%-3.1f-%-3.1f)", float64(k/1000), float64(1+k/1000)))
+			mseconds = yellow(fmt.Sprintf("[%.1f-%.1f)", float64(k/1000), float64(1+k/1000)))
 		case k < 10000:
-			mseconds = yellow(fmt.Sprintf("[%-3.1f-%-3v)", float64(k/1000), 1+k/1000))
+			mseconds = yellow(fmt.Sprintf("[%.1f-%v)", float64(k/1000), 1+k/1000))
 		case k < 100000:
-			mseconds = red(fmt.Sprintf("[%-3v-%-3v)", k/1000, 10+k/1000))
+			mseconds = red(fmt.Sprintf("[%3v-%3v)", k/1000, 10+k/1000))
 		case k < 1000000:
-			mseconds = darkred(fmt.Sprintf("[%-3v-%-3v]", k/1000, 99+k/1000))
+			mseconds = darkred(fmt.Sprintf("[%3v-%3v]", k/1000, 99+k/1000))
 		default:
-			mseconds = darkred(fmt.Sprintf("[%-2vs-%-2vs]", k/1000000, 1+k/1000000))
+			mseconds = darkred(fmt.Sprintf("[%2vs-%2vs]", k/1000000, 1+k/1000000))
 		}
 		for i := 0; i < 50*(latencygrade[k]*100/len(osdlatencies))/100; i++ {
 			blocks.WriteString("#")
 		}
 		megabyteswritten := (float64(latencygrade[k]) * float64(params.blocksize)) / 1024 / 1024
-		buffer.WriteString(fmt.Sprintf("%+10v ms: [%-50v]    Count: %-5v    Total written: %6.3f MB\n",
+		buffer.WriteString(fmt.Sprintf("%-9v ms: [%-50v]    Count: %-5v    Total written: %6.3f MB\n",
 			mseconds, blocks.String(), latencygrade[k], megabyteswritten))
 	}
 	result <- buffer.String()
