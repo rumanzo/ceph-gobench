@@ -92,11 +92,21 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, bs int64
 	}
 
 	latencytotal = latencytotal/int64(len(osdlatencies))
-	// iops = 1 / latency
+	// iops = 1s / latency
+	iops := 1000000 / latencytotal
 	// avg speed = iops * block size / 1 MB
 	avgspeed := (1000000 / float64(latencytotal) * float64(params.blocksize) / 1024 / 1024)
-	buffer.WriteString(green(fmt.Sprintf("Avg iops: %-5v       Avg speed: %.3f MB/s\n\n",
-		1000000/latencytotal, avgspeed)))
+	avgline := fmt.Sprintf("Avg iops: %-5v       Avg speed: %.3f MB/s\n\n", iops, avgspeed)
+	switch {
+	case iops < 80:
+		buffer.WriteString(darkred(avgline))
+	case iops < 200:
+		buffer.WriteString(red(avgline))
+	case iops < 500:
+		buffer.WriteString(yellow(avgline))
+	default:
+		buffer.WriteString(green(avgline))
+	}
 
 	//sort latencies
 	var keys []int64
