@@ -63,21 +63,21 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, offset [
 		switch {
 		case lat < time.Millisecond*10:
 			latencygrade[int(lat.Round(time.Millisecond).Nanoseconds()/1000000)]++
-		case lat < time.Millisecond*20:
-			latencygrade[int(lat.Round(time.Millisecond*5)/1000000)]++
-		default:
+		case lat < time.Millisecond*100:
 			latencygrade[int(lat.Round(time.Millisecond*10)/1000000)]++
+		default:
+			latencygrade[int(lat.Round(time.Millisecond*100)/1000000)]++
 		}
 	}
-	var keys []int
-	for k := range latencygrade {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
+
 	var buffer bytes.Buffer
+
+	//color info
 	yellow := color.New(color.FgHiYellow).SprintFunc()
-	//red := color.New(color.FgHiRed).SprintFunc()
+	red := color.New(color.FgHiRed).SprintFunc()
+	darkred := color.New(color.FgRed).SprintFunc()
 	green := color.New(color.FgHiGreen).SprintFunc()
+	darkgreen := color.New(color.FgGreen).SprintFunc()
 	buffer.WriteString(fmt.Sprintf("Bench result for %v\n", osddevice.Name))
 	infos := map[string]string{"front_addr": strings.Split(osddevice.Info.FrontAddr, "/")[0],
 		"ceph_release/version": osddevice.Info.CephRelease + "/" + osddevice.Info.CephVersionShort, "cpu": osddevice.Info.CPU,
@@ -91,25 +91,42 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, offset [
 		infokeys = append(infokeys, k)
 	}
 	sort.Strings(infokeys)
-	buffer.WriteString(fmt.Sprintf("%-30v %-45v", green("osdname"), yellow(osddevice.Name)))
+	buffer.WriteString(fmt.Sprintf("%-30v %-45v", darkgreen("osdname"), red(osddevice.Name)))
 	for _, key := range infokeys {
 		infonum++
-		buffer.WriteString(fmt.Sprintf("%-30v %-45v", green(key), yellow(infos[key])))
+		buffer.WriteString(fmt.Sprintf("%-30v %-45v", darkgreen(key), yellow(infos[key])))
 		if (infonum % 3) == 0 {
 			buffer.WriteString("\n")
 		}
 	}
 
+	//sort latencies
+	var keys []int
+	for k := range latencygrade {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
 	for _, k := range keys {
 		var blocks bytes.Buffer
+		var mseconds string
+		switch {
+		case 10 <= k && k < 20:
+			mseconds = green(fmt.Sprintf("[%v-%v]", k, k+9))
+		case 20 <= k && k < 100:
+			mseconds = red(fmt.Sprintf("[%v-%v]", k, k+9))
+		case k >= 100:
+			mseconds = darkred(fmt.Sprintf("[%v-%v]", k, k+99))
+		default:
+			mseconds = green(k)
+		}
 		for i := 0; i < 50*(latencygrade[k]*100/len(osdlatencies))/100; i++ {
 			blocks.WriteString("#")
 		}
 		iops := latencygrade[k] / int(params.duration.Seconds())
 		avgspeed := (float64(latencygrade[k]) * float64(params.blocksize) / float64(params.duration.Seconds())) / 1024 / 1024 //mb/sec
 		megabyteswritten := (float64(latencygrade[k]) * float64(params.blocksize)) / 1024 / 1024
-		buffer.WriteString(fmt.Sprintf("%4v ms: [%-50v]    Count: %-5v    IOPS: %-5v    Avg speed: %-6.3f Mb/Sec    Summary written: %6.3f Mb\n",
-			k, blocks.String(), latencygrade[k], iops, avgspeed, megabyteswritten))
+		buffer.WriteString(fmt.Sprintf("%+9v ms: [%-50v]    Count: %-5v    IOPS: %-5v    Avg speed: %-6.3f Mb/Sec    Summary written: %6.3f Mb\n",
+			mseconds, blocks.String(), latencygrade[k], iops, avgspeed, megabyteswritten))
 	}
 	result <- buffer.String()
 }
@@ -189,9 +206,7 @@ func main() {
 		}()
 
 		for message := range results {
-			for _, message := range message {
-				log.Println(message)
-			}
+			log.Println(message)
 
 		}
 	}
