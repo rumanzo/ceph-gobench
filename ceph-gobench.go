@@ -3,10 +3,12 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/fatih/color"
 	"log"
 	"math/rand"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -73,9 +75,32 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, offset [
 	}
 	sort.Ints(keys)
 	var buffer bytes.Buffer
-	buffer.WriteString("\n")
+	yellow := color.New(color.FgHiYellow).SprintFunc()
+	//red := color.New(color.FgHiRed).SprintFunc()
+	green := color.New(color.FgHiGreen).SprintFunc()
+	buffer.WriteString(fmt.Sprintf("Bench result for %v\n", osddevice.Name))
+	infos := map[string]string{"front_addr": strings.Split(osddevice.Info.FrontAddr, "/")[0],
+		"ceph_release/version": osddevice.Info.CephRelease + "/" + osddevice.Info.CephVersionShort, "cpu": osddevice.Info.CPU,
+		"hostname": osddevice.Info.Hostname, "default_device_class": osddevice.Info.DefaultDeviceClass, "devices": osddevice.Info.Devices,
+		"distro_description": osddevice.Info.DistroDescription, "journal_rotational": osddevice.Info.JournalRotational,
+		"rotational": osddevice.Info.Rotational, "kernel_version": osddevice.Info.KernelVersion, "mem_swap_kb": osddevice.Info.MemSwapKb,
+		"mem_total_kb": osddevice.Info.MemTotalKb, "osd_data": osddevice.Info.OsdData, "osd_objectstore": osddevice.Info.OsdObjectstore}
+	infonum := 1
+	var infokeys []string
+	for k := range infos {
+		infokeys = append(infokeys, k)
+	}
+	sort.Strings(infokeys)
+	buffer.WriteString(fmt.Sprintf("%-30v %-45v", green("osdname"), yellow(osddevice.Name)))
+	for _, key := range infokeys {
+		infonum++
+		buffer.WriteString(fmt.Sprintf("%-30v %-45v", green(key), yellow(infos[key])))
+		if (infonum % 3) == 0 {
+			buffer.WriteString("\n")
+		}
+	}
+
 	for _, k := range keys {
-		//blocks := strings.Repeat("_", 20)
 		var blocks bytes.Buffer
 		for i := 0; i < 50*(latencygrade[k]*100/len(osdlatencies))/100; i++ {
 			blocks.WriteString("#")
