@@ -138,7 +138,7 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, startbuf
 			blocks.WriteString("#")
 		}
 		megabyteswritten := (float64(latencygrade[k]) * float64(params.blocksize)) / 1024 / 1024
-		buffer.WriteString(fmt.Sprintf("%+9v ms: [%-50v]    Count: %-5v    Total written: %6.3f MB\n",
+		buffer.WriteString(fmt.Sprintf("%+10v ms: [%-50v]    Count: %-5v    Total written: %6.3f MB\n",
 			mseconds, blocks.String(), latencygrade[k], megabyteswritten))
 	}
 	result <- buffer.String()
