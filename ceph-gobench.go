@@ -130,11 +130,11 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, startbuf
 		case k < 10000:
 			mseconds = color.YellowString(fmt.Sprintf("[%.1f-%v)", float64(k/1000), 1+k/1000))
 		case k < 100000:
-			mseconds = red(fmt.Sprintf("[%3v-%3v)", k/1000, 10+k/1000))
+			mseconds = red(fmt.Sprintf("[%v-%v)", k/1000, 10+k/1000))
 		case k < 1000000:
-			mseconds = darkred(fmt.Sprintf("[%3v-%3v]", k/1000, 99+k/1000))
+			mseconds = darkred(fmt.Sprintf("[%v-%v]", k/1000, 99+k/1000))
 		default:
-			mseconds = darkred(fmt.Sprintf("[%2vs-%2vs]", k/1000000, 1+k/1000000))
+			mseconds = darkred(fmt.Sprintf("[%vs-%vs]", k/1000000, 1+k/1000000))
 		}
 		for i := 0; i < 50*(latencygrade[k]*100/len(osdlatencies))/100; i++ {
 			blocks.WriteString("#")
