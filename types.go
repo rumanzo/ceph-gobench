@@ -386,3 +386,5 @@ type OsdMap struct {
 	Up            []int64 `json:"up"`
 	UpPrimary     int64   `json:"up_primary"`
 }
+
+//todo check types (int64 -> uint64)
