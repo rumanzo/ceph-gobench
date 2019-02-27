@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"math/rand"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -28,10 +30,11 @@ func makeoffsets(threads int64, bs int64, objsize int64) [][]int64 {
 }
 
 func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, offset [][]int64, params *Params,
-	wg *sync.WaitGroup, result chan []string) {
+	wg *sync.WaitGroup, result chan string) {
 	defer wg.Done()
-	threadresult := make(chan string, params.threadsCount)
-	var osdresults, objectnames []string
+	threadresult := make(chan []time.Duration, params.threadsCount)
+	var objectnames []string
+	var osdlatencies []time.Duration
 	defer func() {
 		for _, object := range objectnames {
 			cephconn.ioctx.Delete(object)
@@ -48,14 +51,46 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, offset [
 		go bench_thread(cephconn, osddevice, (*buffs)[j:j+2], offset[i], params, threadresult, objectnames[i])
 	}
 	for i := int64(0); i < params.threadsCount; i++ {
-		osdresults = append(osdresults, <-threadresult)
+		for _, lat := range <-threadresult {
+			osdlatencies = append(osdlatencies, lat)
+		}
 	}
 	close(threadresult)
-	result <- osdresults
+	latencygrade := map[int]int{}
+	for _, lat := range osdlatencies {
+		switch {
+		case lat < time.Millisecond*10:
+			latencygrade[int(lat.Round(time.Millisecond).Nanoseconds()/1000000)]++
+		case lat < time.Millisecond*20:
+			latencygrade[int(lat.Round(time.Millisecond*5)/1000000)]++
+		default:
+			latencygrade[int(lat.Round(time.Millisecond*10)/1000000)]++
+		}
+	}
+	var keys []int
+	for k := range latencygrade {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+	var buffer bytes.Buffer
+	buffer.WriteString("\n")
+	for _, k := range keys {
+		//blocks := strings.Repeat("_", 20)
+		var blocks bytes.Buffer
+		for i := 0; i < 50*(latencygrade[k]*100/len(osdlatencies))/100; i++ {
+			blocks.WriteString("#")
+		}
+		iops := latencygrade[k] / int(params.duration.Seconds())
+		avgspeed := (float64(latencygrade[k]) * float64(params.blocksize) / float64(params.duration.Seconds())) / 1024 / 1024 //mb/sec
+		megabyteswritten := (float64(latencygrade[k]) * float64(params.blocksize)) / 1024 / 1024
+		buffer.WriteString(fmt.Sprintf("%4v ms: [%-50v]    Count: %-5v    IOPS: %-5v    Avg speed: %-6.3f Mb/Sec    Summary written: %6.3f Mb\n",
+			k, blocks.String(), latencygrade[k], iops, avgspeed, megabyteswritten))
+	}
+	result <- buffer.String()
 }
 
 func bench_thread(cephconn *Cephconnection, osddevice Device, buffs [][]byte, offsets []int64, params *Params,
-	result chan string, objname string) {
+	result chan []time.Duration, objname string) {
 
 	starttime := time.Now()
 	var latencies []time.Duration
@@ -85,8 +120,7 @@ func bench_thread(cephconn *Cephconnection, osddevice Device, buffs [][]byte, of
 			n = 0
 		}
 	}
-	result <- fmt.Sprintf("Host: %v Osdname: %v Object: %v\n Latencies: %v\n Writes: %v", osddevice.Info.Hostname,
-		osddevice.Name, objname, latencies, len(latencies))
+	result <- latencies
 }
 
 func main() {
@@ -111,14 +145,14 @@ func main() {
 	offsets := makeoffsets(params.threadsCount, params.blocksize, params.objectsize)
 
 	var wg sync.WaitGroup
-	results := make(chan []string, len(osddevices)*int(params.threadsCount))
+	results := make(chan string, len(osddevices)*int(params.threadsCount))
 	for _, osd := range osddevices {
 		wg.Add(1)
 		if params.parallel == true {
 			go bench(cephconn, osd, &buffs, offsets, &params, &wg, results)
 		} else {
 			bench(cephconn, osd, &buffs, offsets, &params, &wg, results)
-			log.Printf("%v \n", <-results)
+			log.Println(<-results)
 		}
 
 	}
@@ -130,7 +164,10 @@ func main() {
 		}()
 
 		for message := range results {
-			log.Printf("%v \n", message)
+			for _, message := range message {
+				log.Println(message)
+			}
+
 		}
 	}
 

@@ -63,7 +63,7 @@ func Route() Params {
 		log.Println("Can't convert defined block size. 4K block size will be used")
 		params.blocksize = 4096
 	}
-	//uint64(params.objectsize), err = bytefmt.ToBytes(params.os)
+
 	objsize, err := bytefmt.ToBytes(params.os)
 	params.objectsize = int64(objsize)
 	if err != nil {
