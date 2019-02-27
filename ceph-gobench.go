@@ -32,7 +32,11 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, offset [
 	defer wg.Done()
 	threadresult := make(chan string, params.threadsCount)
 	var osdresults, objectnames []string
-
+	defer func() {
+		for _, object := range objectnames {
+			cephconn.ioctx.Delete(object)
+		}
+	}()
 	// calculate object for each thread
 	for suffix := 0; len(objectnames) < int(params.threadsCount); suffix++ {
 		name := "bench_" + strconv.Itoa(suffix)
@@ -52,7 +56,7 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, offset [
 
 func bench_thread(cephconn *Cephconnection, osddevice Device, buffs [][]byte, offsets []int64, params *Params,
 	result chan string, objname string) {
-	defer cephconn.ioctx.Delete(objname)
+
 	starttime := time.Now()
 	var latencies []time.Duration
 	endtime := starttime.Add(params.duration)
@@ -122,7 +126,6 @@ func main() {
 	if params.parallel == true {
 		go func() {
 			wg.Wait()
-			time.Sleep(time.Second)
 			close(results)
 		}()
 
