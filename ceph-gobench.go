@@ -71,7 +71,6 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, startbuf
 	red := color.New(color.FgHiRed).SprintFunc()
 	darkred := color.New(color.FgRed).SprintFunc()
 	green := color.New(color.FgHiGreen).SprintFunc()
-	darkgreen := color.New(color.FgGreen).SprintFunc() //todo delete darkgreen
 	buffer.WriteString(fmt.Sprintf("Bench result for %v\n", osddevice.Name))
 	infos := map[string]string{
 		"front_addr":           strings.Split(osddevice.Info.FrontAddr, "/")[0],
@@ -104,14 +103,14 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, startbuf
 		}
 	}
 	buffer.WriteString(
-		darkgreen("osdname") + strings.Repeat(" ", width[2]-len("osdname")+2) +
+		green("osdname") + strings.Repeat(" ", width[2]-len("osdname")+2) +
 			red(osddevice.Name) + strings.Repeat(" ", width[5]-len(osddevice.Name)+2))
 	for infonum, key := range infokeys {
 		if (infonum % 3) == 2 {
 			buffer.WriteString("\n")
 		}
 		buffer.WriteString(
-			darkgreen(key) + strings.Repeat(" ", width[infonum%3]-len(key)+2) +
+			green(key) + strings.Repeat(" ", width[infonum%3]-len(key)+2) +
 				yellow(infos[key]) + strings.Repeat(" ", width[3+infonum%3]-len(infos[key])+2))
 	}
 	buffer.WriteString("\n\n")
