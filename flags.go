@@ -44,9 +44,9 @@ func Route() Params {
 		"Ceph pool")
 	gnuflag.StringVar(&params.define, "define", "",
 		"Define specifically osd or host. osd.X or ceph-host-X")
-	gnuflag.Int64Var(&params.threadsCount, "threads", 1,
+	gnuflag.Uint64Var(&params.threadsCount, "threads", 1,
 		"Threads count")
-	gnuflag.Int64Var(&params.threadsCount, "t", 1,
+	gnuflag.Uint64Var(&params.threadsCount, "t", 1,
 		"Threads count on each osd")
 	gnuflag.BoolVar(&params.parallel, "parallel", false,
 		"Do test all osd in parallel mode")
@@ -58,14 +58,14 @@ func Route() Params {
 		}
 	}
 	blocksize, err := bytefmt.ToBytes(params.bs)
-	params.blocksize = int64(blocksize)
+	params.blocksize = blocksize
 	if err != nil {
 		log.Println("Can't convert defined block size. 4K block size will be used")
 		params.blocksize = 4096
 	}
 
 	objsize, err := bytefmt.ToBytes(params.os)
-	params.objectsize = int64(objsize)
+	params.objectsize = objsize
 	if err != nil {
 		log.Println("Can't convert defined block size. 4K block size will be used")
 		params.objectsize = 4194304

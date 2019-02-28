@@ -40,7 +40,7 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, startbuf
 	for i := 0; i < int(params.threadsCount); i++ {
 		go BenchThread(cephconn, osddevice, (*buffs)[i*2:i*2+2], params, threadresult, objectnames[i*16:i*16+16])
 	}
-	for i := int64(0); i < params.threadsCount; i++ {
+	for i := uint64(0); i < params.threadsCount; i++ {
 		for _, lat := range <-threadresult {
 			osdlatencies = append(osdlatencies, lat)
 		}
@@ -178,7 +178,7 @@ func BenchThread(cephconn *Cephconnection, osddevice Device, buffs [][]byte, par
 	endtime := starttime.Add(params.duration)
 	n := 0
 	for {
-		offset := rand.Int63n(params.objectsize/params.blocksize) * params.blocksize
+		offset := rand.Int63n(int64(params.objectsize/params.blocksize)) * int64(params.blocksize)
 		objname := objnames[rand.Int31n(int32(len(objnames)))]
 		startwritetime := time.Now()
 		if startwritetime.After(endtime) {
@@ -209,7 +209,7 @@ func main() {
 	time.Sleep(time.Millisecond * 100)
 
 	var buffs [][]byte
-	for i := int64(0); i < 2*params.threadsCount; i++ {
+	for i := uint64(0); i < 2*params.threadsCount; i++ {
 		buffs = append(buffs, make([]byte, params.blocksize))
 	}
 	startbuff := make([]byte, params.blocksize)
@@ -234,7 +234,7 @@ func main() {
 
 	}
 
-	if params.parallel == true { //todo make flag prepare, check objects
+	if params.parallel == true {
 		go func() {
 			wg.Wait()
 			close(results)

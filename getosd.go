@@ -114,14 +114,13 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 			}
 		}
 	}
-	osdstats := map[int64]*Osd{}
+	osdstats := map[uint64]*Osd{}
 	for num, stat := range osddump.Osds {
 		osdstats[stat.Osd] = &osddump.Osds[num]
 	}
 
-	osddevices := []Device{}
+	var osddevices []Device
 	bucketitems := GetCrushHostBuckets(osdcrushdump.Buckets, rootid)
-	//todo check osd up and in
 	if params.define != "" {
 		if strings.HasPrefix(params.define, "osd.") {
 			for _, hostbucket := range bucketitems {
@@ -129,7 +128,7 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 					for _, device := range osdcrushdump.Devices {
 						if device.ID == item.ID && params.define == device.Name {
 							for _, osdmetadata := range osdsmetadata {
-								if osdmetadata.ID == device.ID && osdstats[device.ID].Up == 1 && osdstats[device.ID].In == 1 {
+								if osdmetadata.ID == device.ID && osdstats[uint64(device.ID)].Up == 1 && osdstats[uint64(device.ID)].In == 1 {
 									device.Info = osdmetadata
 									osddevices = append(osddevices, device)
 								}
@@ -149,7 +148,7 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 						for _, device := range osdcrushdump.Devices {
 							if device.ID == item.ID {
 								for _, osdmetadata := range osdsmetadata {
-									if osdmetadata.ID == device.ID && osdstats[device.ID].Up == 1 && osdstats[device.ID].In == 1 {
+									if osdmetadata.ID == device.ID && osdstats[uint64(device.ID)].Up == 1 && osdstats[uint64(device.ID)].In == 1 {
 										device.Info = osdmetadata
 										osddevices = append(osddevices, device)
 									}
@@ -170,7 +169,7 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 				for _, device := range osdcrushdump.Devices {
 					if device.ID == item.ID {
 						for _, osdmetadata := range osdsmetadata {
-							if osdmetadata.ID == device.ID && osdstats[device.ID].Up == 1 && osdstats[device.ID].In == 1 {
+							if osdmetadata.ID == device.ID && osdstats[uint64(device.ID)].Up == 1 && osdstats[uint64(device.ID)].In == 1 {
 								device.Info = osdmetadata
 								osddevices = append(osddevices, device)
 							}
