@@ -114,6 +114,10 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 			}
 		}
 	}
+	osdstats := map[int64]*Osd{}
+	for num, stat := range osddump.Osds {
+		osdstats[stat.Osd] = &osddump.Osds[num]
+	}
 
 	osddevices := []Device{}
 	bucketitems := GetCrushHostBuckets(osdcrushdump.Buckets, rootid)
@@ -125,11 +129,10 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 					for _, device := range osdcrushdump.Devices {
 						if device.ID == item.ID && params.define == device.Name {
 							for _, osdmetadata := range osdsmetadata {
-								if osdmetadata.ID == device.ID {
+								if osdmetadata.ID == device.ID && osdstats[device.ID].Up == 1 && osdstats[device.ID].In == 1 {
 									device.Info = osdmetadata
 									osddevices = append(osddevices, device)
 								}
-
 							}
 						}
 					}
@@ -146,7 +149,7 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 						for _, device := range osdcrushdump.Devices {
 							if device.ID == item.ID {
 								for _, osdmetadata := range osdsmetadata {
-									if osdmetadata.ID == device.ID {
+									if osdmetadata.ID == device.ID && osdstats[device.ID].Up == 1 && osdstats[device.ID].In == 1 {
 										device.Info = osdmetadata
 										osddevices = append(osddevices, device)
 									}
@@ -167,12 +170,11 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 				for _, device := range osdcrushdump.Devices {
 					if device.ID == item.ID {
 						for _, osdmetadata := range osdsmetadata {
-							if osdmetadata.ID == device.ID {
+							if osdmetadata.ID == device.ID && osdstats[device.ID].Up == 1 && osdstats[device.ID].In == 1 {
 								device.Info = osdmetadata
+								osddevices = append(osddevices, device)
 							}
-
 						}
-						osddevices = append(osddevices, device)
 					}
 				}
 			}
