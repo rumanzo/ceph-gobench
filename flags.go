@@ -70,8 +70,11 @@ func Route() Params {
 		log.Println("Can't convert defined block size. 4K block size will be used")
 		params.objectsize = 4194304
 	}
-	if params.objectsize/params.blocksize < 2 { //todo not fatal error. warning about offsets
-		log.Fatalf("Current block size: %v\nCurrent object size: %v\nObject size must be at least 2 times bigger than block size", params.blocksize, params.objectsize)
+	if params.blocksize > params.objectsize {
+		log.Fatalf("Current block size: %v\nCurrent object size: %v\nObject must be bigger or equal than block size", params.blocksize, params.objectsize)
+	}
+	if params.objectsize/params.blocksize < 2 {
+		log.Printf("Current block size: %v\nCurrent object size: %v\nOffset always will be 0", params.blocksize, params.objectsize)
 	}
 	return params
 }
