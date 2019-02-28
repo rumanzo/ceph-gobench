@@ -212,7 +212,7 @@ func main() {
 	for i := uint64(0); i < 2*params.threadsCount; i++ {
 		buffs = append(buffs, make([]byte, params.blocksize))
 	}
-	startbuff := make([]byte, params.blocksize)
+	startbuff := make([]byte, 4096)
 	for num := range buffs {
 		_, err := rand.Read(buffs[num])
 		if err != nil {
