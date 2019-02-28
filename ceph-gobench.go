@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, startbuf *[]byte, params *Params,
+func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, startbuff *[]byte, params *Params,
 	wg *sync.WaitGroup, result chan string) {
 	defer wg.Done()
 	threadresult := make(chan []time.Duration, params.threadsCount)
@@ -29,8 +29,11 @@ func bench(cephconn *Cephconnection, osddevice Device, buffs *[][]byte, startbuf
 		name := "bench_" + strconv.Itoa(suffix)
 		if osddevice.ID == GetObjActingPrimary(cephconn, *params, name) {
 			objectnames = append(objectnames, name)
-			if err := cephconn.ioctx.WriteFull(name, *startbuf); err != nil {
+			if err := cephconn.ioctx.WriteFull(name, *startbuff); err != nil {
 				log.Printf("Can't write object: %v, osd: %v", name, osddevice.Name)
+			}
+			if err := cephconn.ioctx.Truncate(name, uint64(params.objectsize)); err != nil {
+				log.Printf("Can't truncate object: %v, osd: %v", name, osddevice.Name)
 			}
 		}
 	}
@@ -209,7 +212,7 @@ func main() {
 	for i := int64(0); i < 2*params.threadsCount; i++ {
 		buffs = append(buffs, make([]byte, params.blocksize))
 	}
-	startbuff := make([]byte, params.objectsize)
+	startbuff := make([]byte, params.blocksize)
 	for num := range buffs {
 		_, err := rand.Read(buffs[num])
 		if err != nil {
