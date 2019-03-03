@@ -4,7 +4,9 @@ import (
 	"code.cloudfoundry.org/bytefmt"
 	"github.com/juju/gnuflag"
 	"log"
-	"strings"
+	"os"
+	"runtime"
+	"runtime/pprof"
 	"time"
 )
 
@@ -50,13 +52,36 @@ func Route() Params {
 		"Threads count on each osd")
 	gnuflag.BoolVar(&params.parallel, "parallel", false,
 		"Do test all osd in parallel mode")
+	gnuflag.StringVar(&params.cpuprofile, "cpuprofile", "",
+		"Name of cpuprofile")
+	gnuflag.StringVar(&params.memprofile, "memprofile", "",
+		"Name of memprofile")
 	gnuflag.Parse(true)
 
-	if params.mode == "osd" && len(params.define) != 0 {
-		if i := strings.HasPrefix(params.define, "osd."); i != true {
-			log.Fatalln("Define correct osd in format osd.X")
+	if params.cpuprofile != "" {
+		f, err := os.Create(params.cpuprofile)
+		if err != nil {
+			log.Fatal("could not create CPU profile: ", err)
+		}
+		defer f.Close()
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("could not start CPU profile: ", err)
+		}
+		defer pprof.StopCPUProfile()
+	}
+
+	if params.memprofile != "" {
+		f, err := os.Create(params.memprofile)
+		if err != nil {
+			log.Fatal("could not create memory profile: ", err)
+		}
+		defer f.Close()
+		runtime.GC() // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Fatal("could not write memory profile: ", err)
 		}
 	}
+
 	blocksize, err := bytefmt.ToBytes(params.bs)
 	params.blocksize = blocksize
 	if err != nil {
