@@ -6,11 +6,11 @@ import (
 )
 
 type Params struct {
-	duration                                                   time.Duration
-	threadsCount                                               uint64
-	blocksize, objectsize                                      uint64
-	parallel                                                   bool
-	bs, os, cluster, user, keyring, config, pool, mode, define string
+	duration                                                                     time.Duration
+	threadsCount                                                                 uint64
+	blocksize, objectsize                                                        uint64
+	parallel                                                                     bool
+	bs, os, cluster, user, keyring, config, pool, define, cpuprofile, memprofile string
 }
 
 type Cephconnection struct {
