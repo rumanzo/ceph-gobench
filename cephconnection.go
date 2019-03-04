@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/ceph/go-ceph/rados"
 	"log"
 	"os"
+
+	"github.com/ceph/go-ceph/rados"
 )
 
-func connectioninit(params Params) *Cephconnection {
+func connectioninit(params params) *cephConnection {
 	cephconn := &Cephconnection{}
 	var err error
 	if _, err := os.Stat(params.config); os.IsNotExist(err) {

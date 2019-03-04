@@ -165,7 +165,7 @@ type osdDump struct {
 		OldWeight        float64 `json:"old_weight"`
 		Osd              uint64  `json:"osd"`
 	} `json:"osd_xinfo"`
-	Osds         []Osd         `json:"osds"`
+	Osds         []osd         `json:"osds"`
 	PgTemp       []interface{} `json:"pg_temp"`
 	PgUpmap      []interface{} `json:"pg_upmap"`
 	PgUpmapItems []interface{} `json:"pg_upmap_items"`

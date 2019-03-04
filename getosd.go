@@ -19,7 +19,7 @@ func makeMonQuery(cephconn *cephConnection, query map[string]string) []byte {
 	return monrawanswer
 }
 
-func getPoolSize(cephconn *Cephconnection, params Params) Poolinfo {
+func getPoolSize(cephconn *cephConnection, params params) poolinfo {
 	monrawanswer := makeMonQuery(cephconn, map[string]string{"prefix": "osd pool get", "pool": params.pool,
 		"format": "json", "var": "size"})
 	monanswer := Poolinfo{}
