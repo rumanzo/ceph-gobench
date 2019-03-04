@@ -22,7 +22,7 @@ func route() params {
 		"Object size in format  KB = K = KiB	= 1024 MB = M = MiB = 1024 * K GB = G = GiB = 1024 * M TB = T = TiB = 1024 * G")
 	gnuflag.StringVar(&params.os, "o", "4M",
 		"Object size in format  KB = K = KiB	= 1024 MB = M = MiB = 1024 * K GB = G = GiB = 1024 * M TB = T = TiB = 1024 * G")
-	gnuflag.StringVar(&params.user, "user", "admin",
+	gnuflag.StringVar(&params.user, "user", "client.admin",
 		"Ceph user (cephx)")
 	gnuflag.StringVar(&params.user, "u", "client.admin",
 		"Ceph user (cephx)")
@@ -45,7 +45,7 @@ func route() params {
 	gnuflag.StringVar(&params.define, "define", "",
 		"Define specifically osd or host. osd.X or ceph-host-X")
 	gnuflag.Uint64Var(&params.threadsCount, "threads", 1,
-		"Threads count")
+		"Threads count on each osd")
 	gnuflag.Uint64Var(&params.threadsCount, "t", 1,
 		"Threads count on each osd")
 	gnuflag.BoolVar(&params.parallel, "parallel", false,
