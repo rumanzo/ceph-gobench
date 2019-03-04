@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func MakeMonQuery(cephconn *Cephconnection, query map[string]string) []byte {
+func makeMonQuery(cephconn *cephConnection, query map[string]string) []byte {
 	monjson, err := json.Marshal(query)
 	if err != nil {
 		log.Fatalf("Can't marshal json mon query. Error: %v", err)
@@ -19,8 +19,8 @@ func MakeMonQuery(cephconn *Cephconnection, query map[string]string) []byte {
 	return monrawanswer
 }
 
-func GetPoolSize(cephconn *Cephconnection, params Params) Poolinfo {
-	monrawanswer := MakeMonQuery(cephconn, map[string]string{"prefix": "osd pool get", "pool": params.pool,
+func getPoolSize(cephconn *Cephconnection, params Params) Poolinfo {
+	monrawanswer := makeMonQuery(cephconn, map[string]string{"prefix": "osd pool get", "pool": params.pool,
 		"format": "json", "var": "size"})
 	monanswer := Poolinfo{}
 	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
@@ -30,62 +30,62 @@ func GetPoolSize(cephconn *Cephconnection, params Params) Poolinfo {
 
 }
 
-func GetPgByPool(cephconn *Cephconnection, params Params) []PlacementGroup {
-	monrawanswer := MakeMonQuery(cephconn, map[string]string{"prefix": "pg ls-by-pool", "poolstr": params.pool,
+func getPgByPool(cephconn *cephConnection, params params) []placementGroup {
+	monrawanswer := makeMonQuery(cephconn, map[string]string{"prefix": "pg ls-by-pool", "poolstr": params.pool,
 		"format": "json"})
-	var monanswer []PlacementGroup
+	var monanswer []placementGroup
 	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
 		log.Fatalf("Can't parse monitor answer. Error: %v", err)
 	}
 	return monanswer
 }
 
-func GetOsdCrushDump(cephconn *Cephconnection) OsdCrushDump {
-	monrawanswer := MakeMonQuery(cephconn, map[string]string{"prefix": "osd crush dump", "format": "json"})
-	var monanswer OsdCrushDump
+func getOsdCrushDump(cephconn *cephConnection) osdCrushDump {
+	monrawanswer := makeMonQuery(cephconn, map[string]string{"prefix": "osd crush dump", "format": "json"})
+	var monanswer osdCrushDump
 	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
 		log.Fatalf("Can't parse monitor answer. Error: %v", err)
 	}
 	return monanswer
 }
 
-func GetOsdDump(cephconn *Cephconnection) OsdDump {
-	monrawanswer := MakeMonQuery(cephconn, map[string]string{"prefix": "osd dump", "format": "json"})
-	var monanswer OsdDump
+func getOsdDump(cephconn *cephConnection) osdDump {
+	monrawanswer := makeMonQuery(cephconn, map[string]string{"prefix": "osd dump", "format": "json"})
+	var monanswer osdDump
 	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
 		log.Fatalf("Can't parse monitor answer. Error: %v", err)
 	}
 	return monanswer
 }
 
-func GetOsdMetadata(cephconn *Cephconnection) []OsdMetadata {
-	monrawanswer := MakeMonQuery(cephconn, map[string]string{"prefix": "osd metadata", "format": "json"})
-	var monanswer []OsdMetadata
+func getOsdMetadata(cephconn *cephConnection) []osdMetadata {
+	monrawanswer := makeMonQuery(cephconn, map[string]string{"prefix": "osd metadata", "format": "json"})
+	var monanswer []osdMetadata
 	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
 		log.Fatalf("Can't parse monitor answer. Error: %v", err)
 	}
 	return monanswer
 }
 
-func GetObjActingPrimary(cephconn *Cephconnection, params Params, objname string) int64 {
-	monrawanswer := MakeMonQuery(cephconn, map[string]string{"prefix": "osd map", "pool": params.pool,
+func getObjActingPrimary(cephconn *cephConnection, params params, objname string) int64 {
+	monrawanswer := makeMonQuery(cephconn, map[string]string{"prefix": "osd map", "pool": params.pool,
 		"object": objname, "format": "json"})
-	var monanswer OsdMap
+	var monanswer osdMap
 	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
 		log.Fatalf("Can't parse monitor answer. Error: %v", err)
 	}
 	return monanswer.UpPrimary
 }
 
-func GetCrushHostBuckets(buckets []Bucket, itemid int64) []Bucket {
-	var rootbuckets []Bucket
+func getCrushHostBuckets(buckets []bucket, itemid int64) []bucket {
+	var rootbuckets []bucket
 	for _, bucket := range buckets {
 		if bucket.ID == itemid {
 			if bucket.TypeName == "host" {
 				rootbuckets = append(rootbuckets, bucket)
 			} else {
 				for _, item := range bucket.Items {
-					result := GetCrushHostBuckets(buckets, item.ID)
+					result := getCrushHostBuckets(buckets, item.ID)
 					for _, it := range result {
 						rootbuckets = append(rootbuckets, it)
 					}
@@ -96,7 +96,7 @@ func GetCrushHostBuckets(buckets []Bucket, itemid int64) []Bucket {
 	return rootbuckets
 }
 
-func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDump, poolinfo Poolinfo, osdsmetadata []OsdMetadata) []Device {
+func getOsdForLocations(params params, osdcrushdump osdCrushDump, osddump osdDump, poolinfo poolinfo, osdsmetadata []osdMetadata) []device {
 	var crushrule, rootid int64
 	var crushrulename string
 	for _, pool := range osddump.Pools {
@@ -119,8 +119,8 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 		osdstats[stat.Osd] = &osddump.Osds[num]
 	}
 
-	var osddevices []Device
-	bucketitems := GetCrushHostBuckets(osdcrushdump.Buckets, rootid)
+	var osddevices []device
+	bucketitems := getCrushHostBuckets(osdcrushdump.Buckets, rootid)
 	if params.define != "" {
 		if strings.HasPrefix(params.define, "osd.") {
 			for _, hostbucket := range bucketitems {
@@ -185,7 +185,7 @@ func GetOsdForLocations(params Params, osdcrushdump OsdCrushDump, osddump OsdDum
 	return osddevices
 }
 
-func ContainsPg(pgs []PlacementGroup, i int64) bool {
+func containsPg(pgs []placementGroup, i int64) bool {
 	for _, pg := range pgs {
 		if i == pg.ActingPrimary {
 			return true
@@ -194,19 +194,19 @@ func ContainsPg(pgs []PlacementGroup, i int64) bool {
 	return false
 }
 
-func GetOsds(cephconn *Cephconnection, params Params) []Device {
-	poolinfo := GetPoolSize(cephconn, params)
+func getOsds(cephconn *cephConnection, params params) []device {
+	poolinfo := getPoolSize(cephconn, params)
 	if poolinfo.Size != 1 {
 		log.Fatalf("Pool size must be 1. Current size for pool %v is %v. Don't forget that it must be useless pool (not production). Do:\n # ceph osd pool set %v min_size 1\n # ceph osd pool set %v size 1",
 			poolinfo.Pool, poolinfo.Size, poolinfo.Pool, poolinfo.Pool)
 	}
-	placementGroups := GetPgByPool(cephconn, params)
-	crushosddump := GetOsdCrushDump(cephconn)
-	osddump := GetOsdDump(cephconn)
-	osdsmetadata := GetOsdMetadata(cephconn)
-	osddevices := GetOsdForLocations(params, crushosddump, osddump, poolinfo, osdsmetadata)
+	placementGroups := getPgByPool(cephconn, params)
+	crushosddump := getOsdCrushDump(cephconn)
+	osddump := getOsdDump(cephconn)
+	osdsmetadata := getOsdMetadata(cephconn)
+	osddevices := getOsdForLocations(params, crushosddump, osddump, poolinfo, osdsmetadata)
 	for _, device := range osddevices {
-		if exist := ContainsPg(placementGroups, device.ID); exist == false {
+		if exist := containsPg(placementGroups, device.ID); exist == false {
 			log.Fatalln("Not enough pg for test. Some osd haven't placement group at all. Increase pg_num and pgp_num")
 		}
 	}

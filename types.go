@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/ceph/go-ceph/rados"
 	"time"
+
+	"github.com/ceph/go-ceph/rados"
 )
 
-type Params struct {
+type params struct {
 	duration                                                                     time.Duration
 	threadsCount                                                                 uint64
 	blocksize, objectsize                                                        uint64
@@ -13,18 +14,18 @@ type Params struct {
 	bs, os, cluster, user, keyring, config, pool, define, cpuprofile, memprofile string
 }
 
-type Cephconnection struct {
+type cephConnection struct {
 	conn  *rados.Conn
 	ioctx *rados.IOContext
 }
 
-type Poolinfo struct {
+type poolinfo struct {
 	Pool   string `json:"pool,omitempty"`
-	PoolId uint64 `json:"pool_id,omitempty"`
+	PoolID uint64 `json:"pool_id,omitempty"`
 	Size   uint64 `json:"size,omitempty"`
 }
 
-func (times *PlacementGroup) StringsToTimes() {
+func (times *placementGroup) stringsToTimes() {
 	const LongForm = "2006-01-02 15:04:05.000000"
 	times.LastFreshT, _ = time.Parse(LongForm, times.LastFresh)
 	times.LastChangeT, _ = time.Parse(LongForm, times.LastChange)
@@ -43,7 +44,7 @@ func (times *PlacementGroup) StringsToTimes() {
 	times.LastScrubT, _ = time.Parse(LongForm, times.LastScrub)
 }
 
-type Bucket struct {
+type bucket struct {
 	Alg   string `json:"alg"`
 	Hash  string `json:"hash"`
 	ID    int64  `json:"id"`
@@ -58,17 +59,17 @@ type Bucket struct {
 	Weight   float64 `json:"weight"`
 }
 
-type Device struct {
+type device struct {
 	Class string `json:"class"`
 	ID    int64  `json:"id"`
 	Name  string `json:"name"`
-	Info  OsdMetadata
+	Info  osdMetadata
 }
 
-type OsdCrushDump struct {
-	Buckets    []Bucket `json:"buckets"`
+type osdCrushDump struct {
+	Buckets    []bucket `json:"buckets"`
 	ChooseArgs struct{} `json:"choose_args"`
-	Devices    []Device `json:"devices"`
+	Devices    []device `json:"devices"`
 	Rules      []struct {
 		MaxSize  uint64 `json:"max_size"`
 		MinSize  uint64 `json:"min_size"`
@@ -111,7 +112,7 @@ type OsdCrushDump struct {
 		TypeID int64  `json:"type_id"`
 	} `json:"types"`
 }
-type Osd struct {
+type osd struct {
 	ClusterAddr        string   `json:"cluster_addr"`
 	DownAt             uint64   `json:"down_at"`
 	HeartbeatBackAddr  string   `json:"heartbeat_back_addr"`
@@ -130,7 +131,7 @@ type Osd struct {
 	UUID               string   `json:"uuid"`
 	Weight             float64  `json:"weight"`
 }
-type OsdDump struct {
+type osdDump struct {
 	BackfillfullRatio   float64  `json:"backfillfull_ratio"`
 	Blacklist           struct{} `json:"blacklist"`
 	ClusterSnapshot     string   `json:"cluster_snapshot"`
@@ -232,7 +233,7 @@ type OsdDump struct {
 	RequireOsdRelease      string        `json:"require_osd_release"`
 }
 
-type PlacementGroup struct {
+type placementGroup struct {
 	Acting                  []uint64      `json:"acting"`
 	ActingPrimary           int64         `json:"acting_primary"`
 	BlockedBy               []interface{} `json:"blocked_by"`
@@ -332,7 +333,7 @@ type PlacementGroup struct {
 	Version      string   `json:"version"`
 }
 
-type OsdMetadata struct {
+type osdMetadata struct {
 	Arch                       string `json:"arch"`
 	BackAddr                   string `json:"back_addr"`
 	BackIface                  string `json:"back_iface"`
@@ -374,7 +375,7 @@ type OsdMetadata struct {
 	Rotational                 string `json:"rotational"`
 }
 
-type OsdMap struct {
+type osdMap struct {
 	Acting        []uint64 `json:"acting"`
 	ActingPrimary uint64   `json:"acting_primary"`
 	Epoch         uint64   `json:"epoch"`

@@ -1,14 +1,15 @@
 package main
 
 import (
-	"code.cloudfoundry.org/bytefmt"
-	"github.com/juju/gnuflag"
 	"log"
 	"time"
+
+	"code.cloudfoundry.org/bytefmt"
+	"github.com/juju/gnuflag"
 )
 
-func Route() Params {
-	params := Params{}
+func route() params {
+	params := params{}
 	gnuflag.DurationVar(&params.duration, "duration", 30*time.Second,
 		"Time limit for each test in seconds")
 	gnuflag.DurationVar(&params.duration, "d", 30*time.Second,
