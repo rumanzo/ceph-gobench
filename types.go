@@ -386,3 +386,8 @@ type OsdMap struct {
 	Up            []uint64 `json:"up"`
 	UpPrimary     int64    `json:"up_primary"`
 }
+
+type avgLatencies struct {
+	latencytotal int64
+	len          int64
+}
