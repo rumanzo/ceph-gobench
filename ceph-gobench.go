@@ -17,29 +17,25 @@ import (
 )
 
 func bench(cephconn *cephconnection, osddevice Device, buff *[]byte, startbuff *[]byte, params *params,
-	wg *sync.WaitGroup, result chan string, totalLats chan avgLatencies) {
+	wg *sync.WaitGroup, result chan string, totalLats chan avgLatencies, objectnames []string) {
 	defer wg.Done()
 	threadresult := make(chan []time.Duration, params.threadsCount)
-	var objectnames []string
 	var osdlatencies []time.Duration
 	defer func() {
 		for _, object := range objectnames {
 			cephconn.ioctx.Delete(object)
 		}
 	}()
-	// calculate object for each thread
-	for suffix := 0; len(objectnames) < int(params.threadsCount)*16; suffix++ {
-		name := "bench_" + strconv.Itoa(suffix)
-		if osddevice.ID == getObjActingPrimary(cephconn, *params, name) {
-			objectnames = append(objectnames, name)
-			if err := cephconn.ioctx.WriteFull(name, *startbuff); err != nil {
-				log.Printf("Can't write object: %v, osd: %v", name, osddevice.Name)
-			}
-			if err := cephconn.ioctx.Truncate(name, uint64(params.objectsize)); err != nil {
-				log.Printf("Can't truncate object: %v, osd: %v", name, osddevice.Name)
-			}
+	// Create and truncate each object
+	for _, object := range objectnames {
+		if err := cephconn.ioctx.WriteFull(object, *startbuff); err != nil {
+			log.Printf("Can't write object: %v, osd: %v", object, osddevice.Name)
+		}
+		if err := cephconn.ioctx.Truncate(object, uint64(params.objectsize)); err != nil {
+			log.Printf("Can't truncate object: %v, osd: %v", object, osddevice.Name)
 		}
 	}
+
 	for i := 0; i < int(params.threadsCount); i++ {
 		go benchthread(cephconn, osddevice, params, buff, threadresult, objectnames[i*16:i*16+16])
 	}
@@ -239,13 +235,40 @@ func main() {
 	results := make(chan string, len(osddevices)*int(params.threadsCount))
 	totalLats := make(chan avgLatencies, len(osddevices))
 	avgLats := []avgLatencies{}
+
+	log.Println("Calculating objects")
+	objectnames := map[int64][]string{}
+	// calculate object for each thread
+	for suffix := 0; ; suffix++ {
+		name := "bench_" + strconv.Itoa(suffix)
+		osdid := getObjActingPrimary(cephconn, params, name)
+
+		objectsdone := 0
+		for _, osddevice := range osddevices {
+			if osddevice.ID == osdid {
+				if len(objectnames[osdid]) < int(params.threadsCount)*16 {
+					objectnames[osdid] = append(objectnames[osdid], name)
+				} else {
+
+				}
+			}
+			if len(objectnames[osddevice.ID]) >= int(params.threadsCount)*16 {
+				objectsdone++
+			}
+		}
+		if objectsdone >= len(osddevices) {
+			break
+		}
+	}
+
 	log.Println("Benchmark started")
+
 	for _, osd := range osddevices {
 		wg.Add(1)
 		if params.parallel == true {
-			go bench(cephconn, osd, &buff, &startbuff, &params, &wg, results, totalLats)
+			go bench(cephconn, osd, &buff, &startbuff, &params, &wg, results, totalLats, objectnames[osd.ID])
 		} else {
-			bench(cephconn, osd, &buff, &startbuff, &params, &wg, results, totalLats)
+			bench(cephconn, osd, &buff, &startbuff, &params, &wg, results, totalLats, objectnames[osd.ID])
 			avgLats = append(avgLats, <-totalLats)
 			log.Println(<-results)
 		}
