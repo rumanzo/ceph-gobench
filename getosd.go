@@ -22,7 +22,7 @@ func makeMonQuery(cephconn *cephConnection, query map[string]string) []byte {
 func getPoolSize(cephconn *cephConnection, params params) poolinfo {
 	monrawanswer := makeMonQuery(cephconn, map[string]string{"prefix": "osd pool get", "pool": params.pool,
 		"format": "json", "var": "size"})
-	monanswer := Poolinfo{}
+	monanswer := poolinfo{}
 	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
 		log.Fatalf("Can't parse monitor answer. Error: %v", err)
 	}
@@ -100,7 +100,7 @@ func getOsdForLocations(params params, osdcrushdump osdCrushDump, osddump osdDum
 	var crushrule, rootid int64
 	var crushrulename string
 	for _, pool := range osddump.Pools {
-		if pool.Pool == poolinfo.PoolId {
+		if pool.Pool == poolinfo.PoolID {
 			crushrule = pool.CrushRule
 		}
 	}
@@ -114,7 +114,7 @@ func getOsdForLocations(params params, osdcrushdump osdCrushDump, osddump osdDum
 			}
 		}
 	}
-	osdstats := map[uint64]*Osd{}
+	osdstats := map[uint64]*osd{}
 	for num, stat := range osddump.Osds {
 		osdstats[stat.Osd] = &osddump.Osds[num]
 	}

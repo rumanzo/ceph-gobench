@@ -8,7 +8,7 @@ import (
 )
 
 func connectioninit(params params) *cephConnection {
-	cephconn := &Cephconnection{}
+	cephconn := &cephConnection{}
 	var err error
 	if _, err := os.Stat(params.config); os.IsNotExist(err) {
 		log.Fatalf("Congif file not exists. Error: %v\n", err)
