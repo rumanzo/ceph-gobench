@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type Params struct {
+type params struct {
 	duration                                                                     time.Duration
 	threadsCount                                                                 uint64
 	blocksize, objectsize                                                        uint64
@@ -13,7 +13,7 @@ type Params struct {
 	bs, os, cluster, user, keyring, config, pool, define, cpuprofile, memprofile string
 }
 
-type Cephconnection struct {
+type cephconnection struct {
 	conn  *rados.Conn
 	ioctx *rados.IOContext
 }

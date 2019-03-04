@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func bench(cephconn *Cephconnection, osddevice Device, buff *[]byte, startbuff *[]byte, params *Params,
+func bench(cephconn *cephconnection, osddevice Device, buff *[]byte, startbuff *[]byte, params *params,
 	wg *sync.WaitGroup, result chan string) {
 	defer wg.Done()
 	threadresult := make(chan []time.Duration, params.threadsCount)
@@ -30,7 +30,7 @@ func bench(cephconn *Cephconnection, osddevice Device, buff *[]byte, startbuff *
 	// calculate object for each thread
 	for suffix := 0; len(objectnames) < int(params.threadsCount)*16; suffix++ {
 		name := "bench_" + strconv.Itoa(suffix)
-		if osddevice.ID == GetObjActingPrimary(cephconn, *params, name) {
+		if osddevice.ID == getObjActingPrimary(cephconn, *params, name) {
 			objectnames = append(objectnames, name)
 			if err := cephconn.ioctx.WriteFull(name, *startbuff); err != nil {
 				log.Printf("Can't write object: %v, osd: %v", name, osddevice.Name)
@@ -41,7 +41,7 @@ func bench(cephconn *Cephconnection, osddevice Device, buff *[]byte, startbuff *
 		}
 	}
 	for i := 0; i < int(params.threadsCount); i++ {
-		go BenchThread(cephconn, osddevice, params, buff, threadresult, objectnames[i*16:i*16+16])
+		go benchthread(cephconn, osddevice, params, buff, threadresult, objectnames[i*16:i*16+16])
 	}
 	for i := uint64(0); i < params.threadsCount; i++ {
 		for _, lat := range <-threadresult {
@@ -174,7 +174,7 @@ func bench(cephconn *Cephconnection, osddevice Device, buff *[]byte, startbuff *
 	result <- buffer.String()
 }
 
-func BenchThread(cephconn *Cephconnection, osddevice Device, params *Params, buff *[]byte,
+func benchthread(cephconn *cephconnection, osddevice Device, params *params, buff *[]byte,
 	result chan []time.Duration, objnames []string) {
 	var latencies []time.Duration
 	starttime := time.Now()
@@ -198,7 +198,7 @@ func BenchThread(cephconn *Cephconnection, osddevice Device, params *Params, buf
 }
 
 func main() {
-	params := Route()
+	params := route()
 	if params.cpuprofile != "" {
 		f, err := os.Create(params.cpuprofile)
 		if err != nil {
@@ -229,7 +229,7 @@ func main() {
 	time.Sleep(time.Millisecond * 100)
 
 	startbuff := make([]byte, 4096)
-	osddevices := GetOsds(cephconn, params)
+	osddevices := getOsds(cephconn, params)
 	buff := make([]byte, params.blocksize)
 	rand.Read(buff)
 
