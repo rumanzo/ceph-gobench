@@ -333,7 +333,7 @@ func main() {
 	color.Set(color.FgHiYellow)
 	defer color.Unset()
 
-	fmt.Printf("Average iops per osd:%5d    Average speed per osd: %.3f MB/s\n"+
+	fmt.Printf("Average iops per osd:%9d    Average speed per osd: %.3f MB/s\n"+
 		"Total writes count:%11d    Total writes (MB): %v\n",
 		avgIops, avgSpeed, countLat, uint64(countLat)*params.blocksize/1024/1024)
 	if params.parallel {

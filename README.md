@@ -20,15 +20,19 @@ Quickstart
 2. Create pool with size=1 min_size=1 (default pool name "bench")
 3. Use
 ```
-Usage of ./ceph-gobench:
+Usage of ./ceph-gobench-v1.3:
 -c, --config (= "/etc/ceph/ceph.conf")
     Ceph config
+--cpuprofile (= "")
+    Name of cpuprofile
 -d, --duration  (= 30s)
     Time limit for each test in seconds
 --define (= "")
-    Define specifically osd or host. osd.X or ceph-host-X
+    Define specifically osd or host. Example: osd.X, ceph-host-X
 -k, --keyring (= "/etc/ceph/ceph.client.admin.keyring")
     Ceph user keyring
+--memprofile (= "")
+    Name of memprofile
 -n, --cluster (= "ceph")
     Ceph cluster name
 -o, --objectsize (= "4M")
@@ -37,12 +41,16 @@ Usage of ./ceph-gobench:
     Ceph pool
 --parallel  (= false)
     Do test all osd in parallel mode
+--rdefine (= "")
+    Rdefine specifically osd or host in Posix Regex (replaces define). Example: osd.X, ceph-host-X, osd.[0-9]1?$, ceph-host-[1-2]~hdd
 -s, --blocksize (= "4K")
     Block size in format  KB = K = KiB  = 1024 MB = M = MiB = 1024 * K GB = G = GiB = 1024 * M TB = T = TiB = 1024 * G
 -t, --threads  (= 1)
     Threads count on each osd
 -u, --user (= "client.admin")
     Ceph user (cephx)
+-v, --version  (= false)
+    Show version
 ```    
 
 How it works
