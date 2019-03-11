@@ -6,11 +6,11 @@ import (
 )
 
 type params struct {
-	duration                                                                     time.Duration
-	threadsCount                                                                 uint64
-	blocksize, objectsize                                                        uint64
-	parallel                                                                     bool
-	bs, os, cluster, user, keyring, config, pool, define, cpuprofile, memprofile string
+	duration                                                                              time.Duration
+	threadsCount                                                                          uint64
+	blocksize, objectsize                                                                 uint64
+	parallel                                                                              bool
+	bs, os, cluster, user, keyring, config, pool, define, rdefine, cpuprofile, memprofile string
 }
 
 type cephconnection struct {
@@ -390,4 +390,14 @@ type OsdMap struct {
 type avgLatencies struct {
 	latencytotal int64
 	len          int64
+}
+
+type placementGroupNautilus struct {
+	PgReady bool             `json:"pg_ready"`
+	PgStats []PlacementGroup `json:"pg_stats"`
+}
+
+type osdStatLine struct {
+	num  int64
+	line string
 }

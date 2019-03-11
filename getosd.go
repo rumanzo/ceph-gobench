@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"regexp"
 	"strings"
 )
 
@@ -35,7 +36,12 @@ func getPgByPool(cephconn *cephconnection, params params) []PlacementGroup {
 		"format": "json"})
 	var monanswer []PlacementGroup
 	if err := json.Unmarshal([]byte(monrawanswer), &monanswer); err != nil {
-		log.Fatalf("Can't parse monitor answer. Error: %v", err)
+		//try Nautilus
+		var nmonanswer placementGroupNautilus
+		if nerr := json.Unmarshal([]byte(monrawanswer), &nmonanswer); nerr != nil {
+			log.Fatalf("Can't parse monitor answer in getPgByPool. Error: %v", err)
+		}
+		return nmonanswer.PgStats
 	}
 	return monanswer
 }
@@ -121,8 +127,31 @@ func getOsdForLocations(params params, osdcrushdump OsdCrushDump, osddump OsdDum
 
 	var osddevices []Device
 	bucketitems := getCrushHostBuckets(osdcrushdump.Buckets, rootid)
-	if params.define != "" {
-		if strings.HasPrefix(params.define, "osd.") {
+
+	if params.rdefine != "" { // match regex if exists
+		validbucket, err := regexp.CompilePOSIX(params.rdefine)
+		if err != nil {
+			log.Fatalf("Can't parse regex %v", params.rdefine)
+		}
+		for _, hostbucket := range bucketitems {
+			for _, item := range hostbucket.Items {
+				for _, device := range osdcrushdump.Devices {
+					if device.ID == item.ID && (validbucket.MatchString(hostbucket.Name) || validbucket.MatchString(device.Name)) {
+						for _, osdmetadata := range osdsmetadata {
+							if osdmetadata.ID == device.ID && osdstats[uint64(device.ID)].Up == 1 && osdstats[uint64(device.ID)].In == 1 {
+								device.Info = osdmetadata
+								osddevices = append(osddevices, device)
+							}
+						}
+					}
+				}
+			}
+		}
+		if len(osddevices) == 0 {
+			log.Fatalf("Defined host/osd not exist in root for rule: %v pool: %v", crushrulename, poolinfo.Pool)
+		}
+	} else if params.define != "" { // check defined osd/hosts
+		if strings.HasPrefix(params.define, "osd.") { //check that defined is osd, else host
 			for _, hostbucket := range bucketitems {
 				for _, item := range hostbucket.Items {
 					for _, device := range osdcrushdump.Devices {
@@ -152,7 +181,6 @@ func getOsdForLocations(params params, osdcrushdump OsdCrushDump, osddump OsdDum
 										device.Info = osdmetadata
 										osddevices = append(osddevices, device)
 									}
-
 								}
 							}
 						}

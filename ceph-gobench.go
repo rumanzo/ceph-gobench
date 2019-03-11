@@ -17,7 +17,7 @@ import (
 )
 
 func bench(cephconn *cephconnection, osddevice Device, buff *[]byte, startbuff *[]byte, params *params,
-	wg *sync.WaitGroup, result chan string, totalLats chan avgLatencies, objectnames []string) {
+	wg *sync.WaitGroup, result chan string, totalLats chan avgLatencies, osdStatsChan chan osdStatLine, objectnames []string) {
 	defer wg.Done()
 	threadresult := make(chan []time.Duration, params.threadsCount)
 	var osdlatencies []time.Duration
@@ -126,15 +126,22 @@ func bench(cephconn *cephconnection, osddevice Device, buff *[]byte, startbuff *
 	avgspeed := float64(iops) * float64(params.blocksize) / 1024 / 1024
 	avgline := fmt.Sprintf("Avg iops: %-5v    Avg speed: %.3f MB/s    Total writes count: %-5v    Total writes (MB): %-5v\n\n",
 		iops, avgspeed, len(osdlatencies), uint64(len(osdlatencies))*params.blocksize/1024/1024)
+	osdavgline := fmt.Sprintf("%-8v Avg iops: %-5v    Avg speed: %.3f MB/s    Total writes count: %-5v    Total writes (MB): %-5v",
+		osddevice.Name, iops, avgspeed, len(osdlatencies), uint64(len(osdlatencies))*params.blocksize/1024/1024)
+
 	switch {
 	case iops < 80:
 		buffer.WriteString(darkred(avgline))
+		osdStatsChan <- osdStatLine{osddevice.ID, darkred(osdavgline)}
 	case iops < 200:
 		buffer.WriteString(red(avgline))
+		osdStatsChan <- osdStatLine{osddevice.ID, red(osdavgline)}
 	case iops < 500:
 		buffer.WriteString(yellow(avgline))
+		osdStatsChan <- osdStatLine{osddevice.ID, yellow(osdavgline)}
 	default:
 		buffer.WriteString(green(avgline))
+		osdStatsChan <- osdStatLine{osddevice.ID, green(osdavgline)}
 	}
 
 	//sort latencies
@@ -200,11 +207,11 @@ func main() {
 	if params.cpuprofile != "" {
 		f, err := os.Create(params.cpuprofile)
 		if err != nil {
-			log.Fatal("could not create CPU profile: ", err)
+			log.Fatal("Could not create CPU profile: ", err)
 		}
 		defer f.Close()
 		if err := pprof.StartCPUProfile(f); err != nil {
-			log.Fatal("could not start CPU profile: ", err)
+			log.Fatal("Could not start CPU profile: ", err)
 		}
 		defer pprof.StopCPUProfile()
 	}
@@ -212,12 +219,12 @@ func main() {
 	if params.memprofile != "" {
 		f, err := os.Create(params.memprofile)
 		if err != nil {
-			log.Fatal("could not create memory profile: ", err)
+			log.Fatal("Could not create memory profile: ", err)
 		}
 		defer f.Close()
 		runtime.GC() // get up-to-date statistics
 		if err := pprof.WriteHeapProfile(f); err != nil {
-			log.Fatal("could not write memory profile: ", err)
+			log.Fatal("Could not write memory profile: ", err)
 		}
 	}
 	cephconn := connectioninit(params)
@@ -235,6 +242,8 @@ func main() {
 	results := make(chan string, len(osddevices)*int(params.threadsCount))
 	totalLats := make(chan avgLatencies, len(osddevices))
 	avgLats := []avgLatencies{}
+	osdStatsChan := make(chan osdStatLine, len(osddevices))
+	osdStats := map[int64]string{}
 
 	log.Println("Calculating objects")
 	objectnames := map[int64][]string{}
@@ -266,10 +275,12 @@ func main() {
 	for _, osd := range osddevices {
 		wg.Add(1)
 		if params.parallel == true {
-			go bench(cephconn, osd, &buff, &startbuff, &params, &wg, results, totalLats, objectnames[osd.ID])
+			go bench(cephconn, osd, &buff, &startbuff, &params, &wg, results, totalLats, osdStatsChan, objectnames[osd.ID])
 		} else {
-			bench(cephconn, osd, &buff, &startbuff, &params, &wg, results, totalLats, objectnames[osd.ID])
+			bench(cephconn, osd, &buff, &startbuff, &params, &wg, results, totalLats, osdStatsChan, objectnames[osd.ID])
 			avgLats = append(avgLats, <-totalLats)
+			osdStat := <-osdStatsChan
+			osdStats[osdStat.num] = osdStat.line
 			log.Println(<-results)
 		}
 
@@ -280,6 +291,7 @@ func main() {
 			wg.Wait()
 			close(results)
 			close(totalLats)
+			close(osdStatsChan)
 		}()
 
 		for message := range results {
@@ -288,7 +300,21 @@ func main() {
 		for lat := range totalLats {
 			avgLats = append(avgLats, lat)
 		}
+		for osdStat := range osdStatsChan {
+			osdStats[osdStat.num] = osdStat.line
+		}
 	}
+
+	//print sorted stats for all osd
+	var keys []int64
+	for k := range osdStats {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+	for _, k := range keys {
+		fmt.Println(osdStats[k])
+	}
+	fmt.Println()
 
 	sumLat := int64(0)
 	countLat := int64(0)
@@ -307,7 +333,7 @@ func main() {
 	color.Set(color.FgHiYellow)
 	defer color.Unset()
 
-	fmt.Printf("Summary avg iops per osd:%5d    Summary avg speed per osd: %.3f MB/s\n"+
+	fmt.Printf("Average iops per osd:%5d    Average speed per osd: %.3f MB/s\n"+
 		"Total writes count:%11d    Total writes (MB): %v\n",
 		avgIops, avgSpeed, countLat, uint64(countLat)*params.blocksize/1024/1024)
 	if params.parallel {

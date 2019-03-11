@@ -2,13 +2,17 @@ package main
 
 import (
 	"code.cloudfoundry.org/bytefmt"
+	"fmt"
 	"github.com/juju/gnuflag"
 	"log"
+	"os"
 	"time"
 )
 
 func route() params {
 	params := params{}
+	var showversion bool
+	const version = 1.3
 	gnuflag.DurationVar(&params.duration, "duration", 30*time.Second,
 		"Time limit for each test in seconds")
 	gnuflag.DurationVar(&params.duration, "d", 30*time.Second,
@@ -42,7 +46,9 @@ func route() params {
 	gnuflag.StringVar(&params.pool, "p", "bench",
 		"Ceph pool")
 	gnuflag.StringVar(&params.define, "define", "",
-		"Define specifically osd or host. osd.X or ceph-host-X")
+		"Define specifically osd or host. Example: osd.X, ceph-host-X")
+	gnuflag.StringVar(&params.rdefine, "rdefine", "",
+		"Rdefine specifically osd or host in Posix Regex (replaces define). Example: osd.X, ceph-host-X, osd.[0-9]1?$, ceph-host-[1-2]~hdd")
 	gnuflag.Uint64Var(&params.threadsCount, "threads", 1,
 		"Threads count")
 	gnuflag.Uint64Var(&params.threadsCount, "t", 1,
@@ -53,7 +59,15 @@ func route() params {
 		"Name of cpuprofile")
 	gnuflag.StringVar(&params.memprofile, "memprofile", "",
 		"Name of memprofile")
+	gnuflag.BoolVar(&showversion, "version", false, "Show sversion")
+	gnuflag.BoolVar(&showversion, "v", false, "Show version")
+
 	gnuflag.Parse(true)
+
+	if showversion {
+		fmt.Printf("go-bench version v%v\n", version)
+		os.Exit(0)
+	}
 
 	blocksize, err := bytefmt.ToBytes(params.bs)
 	params.blocksize = blocksize
