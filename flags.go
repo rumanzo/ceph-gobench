@@ -55,6 +55,8 @@ func route() params {
 		"Threads count on each osd")
 	gnuflag.BoolVar(&params.parallel, "parallel", false,
 		"Do test all osd in parallel mode")
+	gnuflag.BoolVar(&params.disablecheck, "disablepoolsizecheck", false,
+		"Do test all osd in parallel mode")
 	gnuflag.StringVar(&params.cpuprofile, "cpuprofile", "",
 		"Name of cpuprofile")
 	gnuflag.StringVar(&params.memprofile, "memprofile", "",

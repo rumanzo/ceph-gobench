@@ -133,7 +133,7 @@ osd.0    Avg iops: 320      Avg speed: 1.250 MB/s    Total writes count: 3260   
 osd.1    Avg iops: 330      Avg speed: 1.289 MB/s    Total writes count: 3397     Total writes (MB): 13
 osd.2    Avg iops: 330      Avg speed: 1.289 MB/s    Total writes count: 3381     Total writes (MB): 13
 
-Average iops per osd:  330    Average speed per osd: 1.289 MB/s
+Average iops per osd:      330    Average speed per osd: 1.289 MB/s
 Total writes count:      10038    Total writes (MB): 39
 Summary avg iops:          990    Summary avg speed: 3.867 MB/s
 ```

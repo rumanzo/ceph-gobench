@@ -224,9 +224,11 @@ func containsPg(pgs []PlacementGroup, i int64) bool {
 
 func getOsds(cephconn *cephconnection, params params) []Device {
 	poolinfo := getPoolSize(cephconn, params)
-	if poolinfo.Size != 1 {
-		log.Fatalf("Pool size must be 1. Current size for pool %v is %v. Don't forget that it must be useless pool (not production). Do:\n # ceph osd pool set %v min_size 1\n # ceph osd pool set %v size 1",
-			poolinfo.Pool, poolinfo.Size, poolinfo.Pool, poolinfo.Pool)
+	if params.disablecheck == false {
+		if poolinfo.Size != 1 {
+			log.Fatalf("Pool size must be 1. Current size for pool %v is %v. Don't forget that it must be useless pool (not production). Do:\n # ceph osd pool set %v min_size 1\n # ceph osd pool set %v size 1",
+				poolinfo.Pool, poolinfo.Size, poolinfo.Pool, poolinfo.Pool)
+		}
 	}
 	placementGroups := getPgByPool(cephconn, params)
 	crushosddump := getOsdCrushDump(cephconn)

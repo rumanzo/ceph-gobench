@@ -9,7 +9,7 @@ type params struct {
 	duration                                                                              time.Duration
 	threadsCount                                                                          uint64
 	blocksize, objectsize                                                                 uint64
-	parallel                                                                              bool
+	parallel, disablecheck                                                                bool
 	bs, os, cluster, user, keyring, config, pool, define, rdefine, cpuprofile, memprofile string
 }
 
