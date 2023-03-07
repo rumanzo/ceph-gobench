@@ -235,7 +235,6 @@ type OsdDump struct {
 type PlacementGroup struct {
 	Acting                  []uint64      `json:"acting"`
 	ActingPrimary           int64         `json:"acting_primary"`
-	AvailNoMissing          []any  `json:"avail_no_missing"`
 	BlockedBy               []interface{} `json:"blocked_by"`
 	Created                 uint64        `json:"created"`
 	DirtyStatsInvalid       bool          `json:"dirty_stats_invalid"`
@@ -274,7 +273,6 @@ type PlacementGroup struct {
 	LastUnstaleT            time.Time
 	LogSize                 uint64        `json:"log_size"`
 	LogStart                string        `json:"log_start"`
-	ObjectLocationCounts    []any  `json:"object_location_counts"`
 	ManifestStatsInvalid    bool          `json:"manifest_stats_invalid"`
 	MappingEpoch            uint64        `json:"mapping_epoch"`
 	OmapStatsInvalid        bool          `json:"omap_stats_invalid"`
@@ -317,10 +315,7 @@ type PlacementGroup struct {
 		NumObjectsOmap             uint64 `json:"num_objects_omap"`
 		NumObjectsPinned           uint64 `json:"num_objects_pinned"`
 		NumObjectsRecovered        uint64 `json:"num_objects_recovered"`
-		NumObjectsRepaired         uint64 `json:"num_objects_repaired"`
 		NumObjectsUnfound          uint64 `json:"num_objects_unfound"`
-		NumOmapBytes               uint64 `json:"num_omap_bytes"`
-		NumOmapKeys                uint64 `json:"num_omap_keys"`
 		NumPromote                 uint64 `json:"num_promote"`
 		NumRead                    uint64 `json:"num_read"`
 		NumReadKb                  uint64 `json:"num_read_kb"`
