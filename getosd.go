@@ -215,7 +215,7 @@ func getOsdForLocations(params params, osdcrushdump OsdCrushDump, osddump OsdDum
 
 func containsPg(pgs []PlacementGroup, i int64) bool {
 	for _, pg := range pgs {
-		if i == pg.ActingPrimary {
+		if i == int64(pg.ActingPrimary) {
 			return true
 		}
 	}

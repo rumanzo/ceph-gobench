@@ -233,14 +233,15 @@ type OsdDump struct {
 }
 
 type PlacementGroup struct {
-	Acting                  []uint64      `json:"acting"`
-	ActingPrimary           int64         `json:"acting_primary"`
-	BlockedBy               []interface{} `json:"blocked_by"`
-	Created                 uint64        `json:"created"`
-	DirtyStatsInvalid       bool          `json:"dirty_stats_invalid"`
-	HitsetBytesStatsInvalid bool          `json:"hitset_bytes_stats_invalid"`
-	HitsetStatsInvalid      bool          `json:"hitset_stats_invalid"`
-	LastActive              string        `json:"last_active"`
+	Acting                  []int  `json:"acting"`
+	ActingPrimary           int    `json:"acting_primary"`
+	AvailNoMissing          []any  `json:"avail_no_missing"`
+	BlockedBy               []any  `json:"blocked_by"`
+	Created                 int    `json:"created"`
+	DirtyStatsInvalid       bool   `json:"dirty_stats_invalid"`
+	HitsetBytesStatsInvalid bool   `json:"hitset_bytes_stats_invalid"`
+	HitsetStatsInvalid      bool   `json:"hitset_stats_invalid"`
+	LastActive              string `json:"last_active"`
 	LastActiveT             time.Time
 	LastBecameActive        string `json:"last_became_active"`
 	LastBecameActiveT       time.Time
@@ -256,7 +257,7 @@ type PlacementGroup struct {
 	LastDeepScrubT          time.Time
 	LastDeepScrubStamp      string `json:"last_deep_scrub_stamp"`
 	LastDeepScrubStampT     time.Time
-	LastEpochClean          uint64 `json:"last_epoch_clean"`
+	LastEpochClean          int    `json:"last_epoch_clean"`
 	LastFresh               string `json:"last_fresh"`
 	LastFreshT              time.Time
 	LastFullsized           string `json:"last_fullsized"`
@@ -265,71 +266,81 @@ type PlacementGroup struct {
 	LastPeeredT             time.Time
 	LastScrub               string `json:"last_scrub"`
 	LastScrubT              time.Time
+	LastScrubDuration       int    `json:"last_scrub_duration"`
 	LastScrubStamp          string `json:"last_scrub_stamp"`
 	LastScrubStampT         time.Time
 	LastUndegraded          string `json:"last_undegraded"`
 	LastUndegradedT         time.Time
 	LastUnstale             string `json:"last_unstale"`
 	LastUnstaleT            time.Time
-	LogSize                 uint64        `json:"log_size"`
-	LogStart                string        `json:"log_start"`
-	ManifestStatsInvalid    bool          `json:"manifest_stats_invalid"`
-	MappingEpoch            uint64        `json:"mapping_epoch"`
-	OmapStatsInvalid        bool          `json:"omap_stats_invalid"`
-	OndiskLogSize           uint64        `json:"ondisk_log_size"`
-	OndiskLogStart          string        `json:"ondisk_log_start"`
-	Parent                  string        `json:"parent"`
-	ParentSplitBits         uint64        `json:"parent_split_bits"`
-	Pgid                    string        `json:"pgid"`
-	PinStatsInvalid         bool          `json:"pin_stats_invalid"`
-	PurgedSnaps             []interface{} `json:"purged_snaps"`
-	ReportedEpoch           string        `json:"reported_epoch"`
-	ReportedSeq             string        `json:"reported_seq"`
-	SnaptrimqLen            uint64        `json:"snaptrimq_len"`
+	LogSize                 int     `json:"log_size"`
+	LogStart                string  `json:"log_start"`
+	ManifestStatsInvalid    bool    `json:"manifest_stats_invalid"`
+	MappingEpoch            int     `json:"mapping_epoch"`
+	ObjectLocationCounts    []any   `json:"object_location_counts"`
+	ObjectsScrubbed         int     `json:"objects_scrubbed"`
+	ObjectsTrimmed          int     `json:"objects_trimmed"`
+	OmapStatsInvalid        bool    `json:"omap_stats_invalid"`
+	OndiskLogSize           int     `json:"ondisk_log_size"`
+	OndiskLogStart          string  `json:"ondisk_log_start"`
+	Parent                  string  `json:"parent"`
+	ParentSplitBits         int     `json:"parent_split_bits"`
+	Pgid                    string  `json:"pgid"`
+	PinStatsInvalid         bool    `json:"pin_stats_invalid"`
+	PurgedSnaps             []any   `json:"purged_snaps"`
+	ReportedEpoch           int     `json:"reported_epoch"`
+	ReportedSeq             int     `json:"reported_seq"`
+	ScrubDuration           float64 `json:"scrub_duration"`
+	ScrubSchedule           string  `json:"scrub_schedule"`
+	SnaptrimDuration        int     `json:"snaptrim_duration"`
+	SnaptrimqLen            int     `json:"snaptrimq_len"`
 	StatSum                 struct {
-		NumBytes                   uint64 `json:"num_bytes"`
-		NumBytesHitSetArchive      uint64 `json:"num_bytes_hit_set_archive"`
-		NumBytesRecovered          uint64 `json:"num_bytes_recovered"`
-		NumDeepScrubErrors         uint64 `json:"num_deep_scrub_errors"`
-		NumEvict                   uint64 `json:"num_evict"`
-		NumEvictKb                 uint64 `json:"num_evict_kb"`
-		NumEvictModeFull           uint64 `json:"num_evict_mode_full"`
-		NumEvictModeSome           uint64 `json:"num_evict_mode_some"`
-		NumFlush                   uint64 `json:"num_flush"`
-		NumFlushKb                 uint64 `json:"num_flush_kb"`
-		NumFlushModeHigh           uint64 `json:"num_flush_mode_high"`
-		NumFlushModeLow            uint64 `json:"num_flush_mode_low"`
-		NumKeysRecovered           uint64 `json:"num_keys_recovered"`
-		NumLargeOmapObjects        uint64 `json:"num_large_omap_objects"`
-		NumLegacySnapsets          uint64 `json:"num_legacy_snapsets"`
-		NumObjectClones            uint64 `json:"num_object_clones"`
-		NumObjectCopies            uint64 `json:"num_object_copies"`
-		NumObjects                 uint64 `json:"num_objects"`
-		NumObjectsDegraded         uint64 `json:"num_objects_degraded"`
-		NumObjectsDirty            uint64 `json:"num_objects_dirty"`
-		NumObjectsHitSetArchive    uint64 `json:"num_objects_hit_set_archive"`
-		NumObjectsManifest         uint64 `json:"num_objects_manifest"`
-		NumObjectsMisplaced        uint64 `json:"num_objects_misplaced"`
-		NumObjectsMissing          uint64 `json:"num_objects_missing"`
-		NumObjectsMissingOnPrimary uint64 `json:"num_objects_missing_on_primary"`
-		NumObjectsOmap             uint64 `json:"num_objects_omap"`
-		NumObjectsPinned           uint64 `json:"num_objects_pinned"`
-		NumObjectsRecovered        uint64 `json:"num_objects_recovered"`
-		NumObjectsUnfound          uint64 `json:"num_objects_unfound"`
-		NumPromote                 uint64 `json:"num_promote"`
-		NumRead                    uint64 `json:"num_read"`
-		NumReadKb                  uint64 `json:"num_read_kb"`
-		NumScrubErrors             uint64 `json:"num_scrub_errors"`
-		NumShallowScrubErrors      uint64 `json:"num_shallow_scrub_errors"`
-		NumWhiteouts               uint64 `json:"num_whiteouts"`
-		NumWrite                   uint64 `json:"num_write"`
-		NumWriteKb                 uint64 `json:"num_write_kb"`
+		NumBytes                   int `json:"num_bytes"`
+		NumBytesHitSetArchive      int `json:"num_bytes_hit_set_archive"`
+		NumBytesRecovered          int `json:"num_bytes_recovered"`
+		NumDeepScrubErrors         int `json:"num_deep_scrub_errors"`
+		NumEvict                   int `json:"num_evict"`
+		NumEvictKb                 int `json:"num_evict_kb"`
+		NumEvictModeFull           int `json:"num_evict_mode_full"`
+		NumEvictModeSome           int `json:"num_evict_mode_some"`
+		NumFlush                   int `json:"num_flush"`
+		NumFlushKb                 int `json:"num_flush_kb"`
+		NumFlushModeHigh           int `json:"num_flush_mode_high"`
+		NumFlushModeLow            int `json:"num_flush_mode_low"`
+		NumKeysRecovered           int `json:"num_keys_recovered"`
+		NumLargeOmapObjects        int `json:"num_large_omap_objects"`
+		NumLegacySnapsets          int `json:"num_legacy_snapsets"`
+		NumObjectClones            int `json:"num_object_clones"`
+		NumObjectCopies            int `json:"num_object_copies"`
+		NumObjects                 int `json:"num_objects"`
+		NumObjectsDegraded         int `json:"num_objects_degraded"`
+		NumObjectsDirty            int `json:"num_objects_dirty"`
+		NumObjectsHitSetArchive    int `json:"num_objects_hit_set_archive"`
+		NumObjectsManifest         int `json:"num_objects_manifest"`
+		NumObjectsMisplaced        int `json:"num_objects_misplaced"`
+		NumObjectsMissing          int `json:"num_objects_missing"`
+		NumObjectsMissingOnPrimary int `json:"num_objects_missing_on_primary"`
+		NumObjectsOmap             int `json:"num_objects_omap"`
+		NumObjectsPinned           int `json:"num_objects_pinned"`
+		NumObjectsRecovered        int `json:"num_objects_recovered"`
+		NumObjectsRepaired         int `json:"num_objects_repaired"`
+		NumObjectsUnfound          int `json:"num_objects_unfound"`
+		NumOmapBytes               int `json:"num_omap_bytes"`
+		NumOmapKeys                int `json:"num_omap_keys"`
+		NumPromote                 int `json:"num_promote"`
+		NumRead                    int `json:"num_read"`
+		NumReadKb                  int `json:"num_read_kb"`
+		NumScrubErrors             int `json:"num_scrub_errors"`
+		NumShallowScrubErrors      int `json:"num_shallow_scrub_errors"`
+		NumWhiteouts               int `json:"num_whiteouts"`
+		NumWrite                   int `json:"num_write"`
+		NumWriteKb                 int `json:"num_write_kb"`
 	} `json:"stat_sum"`
-	State        string   `json:"state"`
-	StatsInvalid bool     `json:"stats_invalid"`
-	Up           []uint64 `json:"up"`
-	UpPrimary    int64    `json:"up_primary"`
-	Version      string   `json:"version"`
+	State        string `json:"state"`
+	StatsInvalid bool   `json:"stats_invalid"`
+	Up           []int  `json:"up"`
+	UpPrimary    int    `json:"up_primary"`
+	Version      string `json:"version"`
 }
 
 type OsdMetadata struct {
