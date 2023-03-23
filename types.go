@@ -8,8 +8,8 @@ import (
 type params struct {
 	duration                                                                              time.Duration
 	threadsCount                                                                          uint64
-	blocksize, objectsize                                                                 uint64
-	parallel, disablecheck                                                                bool
+	blockSize, objectSize                                                                 uint64
+	parallel, disableCheck                                                                bool
 	bs, os, cluster, user, keyring, config, pool, define, rdefine, cpuprofile, memprofile string
 }
 
@@ -399,7 +399,7 @@ type OsdMap struct {
 }
 
 type avgLatencies struct {
-	latencytotal int64
+	latencyTotal int64
 	len          int64
 }
 

@@ -17,11 +17,11 @@ func route() params {
 		"Time limit for each test in seconds")
 	gnuflag.DurationVar(&params.duration, "d", 30*time.Second,
 		"Time limit for each test in seconds")
-	gnuflag.StringVar(&params.bs, "blocksize", "4K",
+	gnuflag.StringVar(&params.bs, "blockSize", "4K",
 		"Block size in format  KB = K = KiB	= 1024 MB = M = MiB = 1024 * K GB = G = GiB = 1024 * M TB = T = TiB = 1024 * G")
 	gnuflag.StringVar(&params.bs, "s", "4K",
 		"Block size in format  KB = K = KiB	= 1024 MB = M = MiB = 1024 * K GB = G = GiB = 1024 * M TB = T = TiB = 1024 * G")
-	gnuflag.StringVar(&params.os, "objectsize", "4M",
+	gnuflag.StringVar(&params.os, "objectSize", "4M",
 		"Object size in format  KB = K = KiB	= 1024 MB = M = MiB = 1024 * K GB = G = GiB = 1024 * M TB = T = TiB = 1024 * G")
 	gnuflag.StringVar(&params.os, "o", "4M",
 		"Object size in format  KB = K = KiB	= 1024 MB = M = MiB = 1024 * K GB = G = GiB = 1024 * M TB = T = TiB = 1024 * G")
@@ -55,7 +55,7 @@ func route() params {
 		"Threads count on each osd")
 	gnuflag.BoolVar(&params.parallel, "parallel", false,
 		"Do test all osd in parallel mode")
-	gnuflag.BoolVar(&params.disablecheck, "disablepoolsizecheck", false,
+	gnuflag.BoolVar(&params.disableCheck, "disablepoolsizecheck", false,
 		"Do test all osd in parallel mode")
 	gnuflag.StringVar(&params.cpuprofile, "cpuprofile", "",
 		"Name of cpuprofile")
@@ -72,23 +72,23 @@ func route() params {
 	}
 
 	blocksize, err := bytefmt.ToBytes(params.bs)
-	params.blocksize = blocksize
+	params.blockSize = blocksize
 	if err != nil {
 		log.Println("Can't convert defined block size. 4K block size will be used")
-		params.blocksize = 4096
+		params.blockSize = 4096
 	}
 
 	objsize, err := bytefmt.ToBytes(params.os)
-	params.objectsize = objsize
+	params.objectSize = objsize
 	if err != nil {
 		log.Println("Can't convert defined block size. 4K block size will be used")
-		params.objectsize = 4194304
+		params.objectSize = 4194304
 	}
-	if params.blocksize > params.objectsize {
-		log.Fatalf("Current block size: %v\nCurrent object size: %v\nObject must be bigger or equal than block size", params.blocksize, params.objectsize)
+	if params.blockSize > params.objectSize {
+		log.Fatalf("Current block size: %v\nCurrent object size: %v\nObject must be bigger or equal than block size", params.blockSize, params.objectSize)
 	}
-	if params.objectsize/params.blocksize < 2 {
-		log.Printf("Current block size: %v\nCurrent object size: %v\nOffset always will be 0", params.blocksize, params.objectsize)
+	if params.objectSize/params.blockSize < 2 {
+		log.Printf("Current block size: %v\nCurrent object size: %v\nOffset always will be 0", params.blockSize, params.objectSize)
 	}
 	return params
 }
